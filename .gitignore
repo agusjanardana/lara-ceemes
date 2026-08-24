@@ -1,0 +1,12 @@
+# Package documentation is version-controlled.
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.phpstan.cache/
+/.phpunit.result.cache
+/.phpunit.cache
+/.idea/
+/.vscode/
+
+# custom ignore rules
+publish.md

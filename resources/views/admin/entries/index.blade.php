@@ -1,0 +1,20 @@
+@extends('ceemes::admin.layout', ['title' => $collection->name])
+
+@section('content')
+    <div class="ceemes-page-header"><div><a class="ceemes-back" href="{{ route('ceemes.admin.collections.index') }}">← Collections</a><h1>{{ $collection->name }}</h1><p>{{ $collection->description ?: 'Kelola seluruh Entry pada Collection ini.' }}</p></div><div class="ceemes-header-actions"><a class="ceemes-button ceemes-button-secondary" href="{{ route('ceemes.admin.blueprints.index', $collection) }}">Kelola Blueprints</a>@if($blueprints->isNotEmpty())<a class="ceemes-button" href="{{ route('ceemes.admin.entries.create', $collection) }}"><span>＋</span> Buat Entry</a>@else<a class="ceemes-button" href="{{ route('ceemes.admin.blueprints.index', $collection) }}">Siapkan Blueprint</a>@endif</div></div>
+    <section class="ceemes-panel">
+        <form class="ceemes-toolbar" method="GET">
+            <label class="ceemes-search-box"><span>⌕</span><input type="search" name="q" value="{{ request('q') }}" placeholder="Cari title atau slug…"></label>
+            <select class="ceemes-filter" name="status" onchange="this.form.submit()"><option value="">Semua status</option><option value="published" @selected(request('status') === 'published')>Published</option><option value="draft" @selected(request('status') === 'draft')>Draft</option></select>
+            <select class="ceemes-filter" name="blueprint" onchange="this.form.submit()"><option value="">Semua Blueprint</option>@foreach($blueprints as $blueprint)<option value="{{ $blueprint->uuid }}" @selected(request('blueprint') === $blueprint->uuid)>{{ $blueprint->name }}</option>@endforeach</select>
+            <button class="ceemes-button ceemes-button-secondary" type="submit">Filter</button>
+            @if(request()->hasAny(['q','status','blueprint']))<a class="ceemes-button ceemes-button-ghost" href="{{ route('ceemes.admin.entries.index', $collection) }}">Reset</a>@endif
+        </form>
+        <div class="ceemes-table-wrap"><table class="ceemes-table"><thead><tr><th>Title</th><th>Status</th><th>Blueprint</th><th>Public URL</th><th>Updated</th><th class="ceemes-actions-column">Aksi</th></tr></thead><tbody>
+            @forelse($entries as $entry)
+                <tr><td class="ceemes-cell-primary"><a href="{{ route('ceemes.admin.entries.edit', $entry) }}">{{ $entry->title }}</a></td><td><span class="ceemes-badge {{ $entry->status->value === 'published' ? 'is-success' : 'is-warning' }}">{{ ucfirst($entry->status->value) }}</span></td><td>{{ $entry->blueprint->name }}</td><td class="ceemes-muted"><a href="{{ $entry->publicUrl() }}" target="_blank">{{ $entry->uri }}</a></td><td>{{ $entry->updated_at?->diffForHumans() }}</td><td class="ceemes-row-actions"><a class="ceemes-icon-button" href="{{ route('ceemes.admin.entries.edit', $entry) }}" title="Edit">✎</a><form method="POST" action="{{ route('ceemes.admin.entries.destroy', $entry) }}" data-confirm="Hapus Entry {{ $entry->title }}?">@csrf @method('DELETE')<button class="ceemes-icon-button is-danger" type="submit">⌫</button></form></td></tr>
+            @empty<tr><td colspan="6"><div class="ceemes-empty"><span>＋</span><h3>Belum ada Entry</h3>@if($blueprints->isEmpty())<p>Buat Blueprint dan field terlebih dahulu sebelum mengisi konten.</p><a class="ceemes-button" href="{{ route('ceemes.admin.blueprints.index', $collection) }}">Siapkan Blueprint</a>@else<p>Buat Entry pertama untuk Collection {{ $collection->name }}.</p><a class="ceemes-button" href="{{ route('ceemes.admin.entries.create', $collection) }}">Buat Entry pertama</a>@endif</div></td></tr>@endforelse
+        </tbody></table></div>
+        @if($entries->hasPages())<div class="ceemes-pagination"><span>Menampilkan {{ $entries->firstItem() }}–{{ $entries->lastItem() }} dari {{ $entries->total() }}</span><div class="ceemes-pagination-links">@if($entries->onFirstPage())<span>←</span>@else<a href="{{ $entries->previousPageUrl() }}">←</a>@endif @if($entries->hasMorePages())<a href="{{ $entries->nextPageUrl() }}">→</a>@else<span>→</span>@endif</div></div>@endif
+    </section>
+@endsection

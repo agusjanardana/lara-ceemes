@@ -1,0 +1,65 @@
+{
+  "$schema": "https://getcomposer.org/schema.json",
+  "name": "janar/lara-ceemes",
+  "description": "A lightweight and flexible CMS package for Laravel.",
+  "keywords": [
+    "cms",
+    "laravel",
+    "laravel-package"
+  ],
+  "license": "MIT",
+  "type": "library",
+  "require": {
+    "php": "^8.3",
+    "illuminate/auth": "^13.0",
+    "illuminate/cache": "^13.0",
+    "illuminate/console": "^13.0",
+    "illuminate/contracts": "^13.0",
+    "illuminate/database": "^13.0",
+    "illuminate/filesystem": "^13.0",
+    "illuminate/http": "^13.0",
+    "illuminate/routing": "^13.0",
+    "illuminate/support": "^13.0",
+    "illuminate/validation": "^13.0",
+    "illuminate/view": "^13.0"
+  },
+  "require-dev": {
+    "laravel/pint": "^1.27",
+    "larastan/larastan": "^3.0",
+    "mockery/mockery": "^1.6",
+    "orchestra/testbench": "^11.0",
+    "phpunit/phpunit": "^12.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "LaraCeemes\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "LaraCeemes\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "analyse": "phpstan analyse",
+    "format": "pint",
+    "format:test": "pint --test"
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "LaraCeemes\\LaraCeemesServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "pestphp/pest-plugin": true,
+      "php-http/discovery": true
+    }
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
+}

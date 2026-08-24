@@ -1,0 +1,101 @@
+<?php
+
+declare(strict_types=1);
+
+namespace LaraCeemes\Models;
+
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Arr;
+use LaraCeemes\Fields\FieldRegistry;
+
+/**
+ * @property string $uuid
+ * @property string $entry_uuid
+ * @property string $section_type_uuid
+ * @property string $field_handle
+ * @property string|null $key
+ * @property array<string, mixed> $data
+ * @property int $sort_order
+ * @property bool $is_enabled
+ * @property-read Entry $entry
+ * @property-read SectionType $sectionType
+ */
+final class Section extends CeemesModel
+{
+    protected $table = 'ceemes_sections';
+
+    protected $fillable = [
+        'entry_uuid',
+        'section_type_uuid',
+        'field_handle',
+        'key',
+        'data',
+        'sort_order',
+        'is_enabled',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'data' => 'array',
+            'sort_order' => 'integer',
+            'is_enabled' => 'boolean',
+        ];
+    }
+
+    /** @return BelongsTo<Entry, $this> */
+    public function entry(): BelongsTo
+    {
+        return $this->belongsTo(Entry::class, 'entry_uuid', 'uuid');
+    }
+
+    /** @return BelongsTo<SectionType, $this> */
+    public function sectionType(): BelongsTo
+    {
+        return $this->belongsTo(SectionType::class, 'section_type_uuid', 'uuid');
+    }
+
+    public function get(string $handle, mixed $default = null): mixed
+    {
+        return data_get($this->data(), $handle, $default);
+    }
+
+    public function has(string $handle): bool
+    {
+        return Arr::has($this->data(), $handle);
+    }
+
+    /** @return array<string, mixed> */
+    public function data(): array
+    {
+        $data = $this->getAttribute('data');
+
+        return is_array($data) ? $data : [];
+    }
+
+    public function type(): SectionType
+    {
+        return $this->sectionType;
+    }
+
+    public function handle(): string
+    {
+        return $this->sectionType->handle;
+    }
+
+    public function media(string $fieldHandle): mixed
+    {
+        $field = $this->sectionType->fields()
+            ->where('handle', $fieldHandle)
+            ->where('type', 'media')
+            ->first();
+
+        if ($field === null) {
+            return null;
+        }
+
+        return app(FieldRegistry::class)
+            ->get('media')
+            ->resolve($this->get($fieldHandle), is_array($field->config) ? $field->config : []);
+    }
+}
