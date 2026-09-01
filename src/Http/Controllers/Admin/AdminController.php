@@ -9,9 +9,9 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\ValidationException;
-use LaraCeemes\Models\BlueprintField;
-use LaraCeemes\Models\Collection;
 use LaraCeemes\Models\SectionField;
+use LaraCeemes\Models\Set;
+use LaraCeemes\Models\SetField;
 
 abstract class AdminController extends Controller
 {
@@ -19,7 +19,7 @@ abstract class AdminController extends Controller
     protected function render(string $view, array $data = []): View
     {
         return app(Factory::class)->make($view, [
-            'sidebarCollections' => Collection::query()
+            'sidebarSets' => Set::query()
                 ->orderBy('sort_order')
                 ->orderBy('name')
                 ->get(['uuid', 'name', 'handle']),
@@ -50,7 +50,7 @@ abstract class AdminController extends Controller
 
     /**
      * @param  array<string, mixed>  $data
-     * @param  iterable<int, BlueprintField|SectionField>  $fields
+     * @param  iterable<int, SetField|SectionField>  $fields
      * @return array<string, mixed>
      */
     protected function normalizeFieldFormData(array $data, iterable $fields, string $prefix = 'data'): array

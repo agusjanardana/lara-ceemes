@@ -5,19 +5,16 @@ declare(strict_types=1);
 namespace LaraCeemes\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
 use LaraCeemes\Fields\FieldRegistry;
 
 /**
  * @property string $uuid
- * @property string $entry_uuid
  * @property string $section_type_uuid
- * @property string $field_handle
- * @property string|null $key
+ * @property string|null $name
+ * @property string|null $handle
  * @property array<string, mixed> $data
- * @property int $sort_order
- * @property bool $is_enabled
- * @property-read Entry $entry
  * @property-read SectionType $sectionType
  */
 final class Section extends CeemesModel
@@ -25,34 +22,36 @@ final class Section extends CeemesModel
     protected $table = 'ceemes_sections';
 
     protected $fillable = [
-        'entry_uuid',
         'section_type_uuid',
-        'field_handle',
-        'key',
+        'name',
+        'handle',
         'data',
-        'sort_order',
-        'is_enabled',
     ];
 
     protected function casts(): array
     {
         return [
             'data' => 'array',
-            'sort_order' => 'integer',
-            'is_enabled' => 'boolean',
         ];
-    }
-
-    /** @return BelongsTo<Entry, $this> */
-    public function entry(): BelongsTo
-    {
-        return $this->belongsTo(Entry::class, 'entry_uuid', 'uuid');
     }
 
     /** @return BelongsTo<SectionType, $this> */
     public function sectionType(): BelongsTo
     {
         return $this->belongsTo(SectionType::class, 'section_type_uuid', 'uuid');
+    }
+
+    /** @return BelongsToMany<Content, $this> */
+    public function contents(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Content::class,
+            'ceemes_content_section',
+            'section_uuid',
+            'content_uuid',
+            'uuid',
+            'uuid',
+        )->withPivot(['uuid', 'region', 'key', 'sort_order', 'is_enabled'])->withTimestamps();
     }
 
     public function get(string $handle, mixed $default = null): mixed

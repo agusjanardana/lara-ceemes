@@ -41,27 +41,45 @@
     document.addEventListener('keydown', (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); (globalSearch || search)?.focus(); }
     });
-    $$('[data-blueprint-select]').forEach((select) => {
+    $$('[data-dynamic-select]').forEach((select) => {
         const root = select.closest('dialog') || select.closest('form') || document;
-        const toggle = () => $$('[data-blueprint-fields]', root).forEach((group) => group.hidden = group.dataset.blueprintFields !== select.value);
+        const toggle = () => $$('[data-dynamic-fields]', root).forEach((group) => group.hidden = group.dataset.dynamicFields !== select.value);
         select.addEventListener('change', toggle); toggle();
     });
     $$('[data-field-type-select]').forEach((select) => {
         const toggle = () => {
             const form = select.closest('form');
             const sectionsConfig = $('[data-sections-config]', form);
-            const entryConfig = $('[data-entry-config]', form);
+            const contentConfig = $('[data-content-config]', form);
             const repeaterConfig = $('[data-repeater-config]', form);
-            const entryCollection = $('[data-entry-collection-config]', form);
+            const contentSet = $('[data-content-set-config]', form);
             if (sectionsConfig) sectionsConfig.hidden = select.value !== 'sections';
-            if (entryConfig) entryConfig.hidden = select.value !== 'entry';
+            if (contentConfig) contentConfig.hidden = select.value !== 'content';
             if (repeaterConfig) {
                 repeaterConfig.hidden = select.value !== 'repeater';
                 $$('input,select,textarea,button', repeaterConfig).forEach((control) => control.disabled = select.value !== 'repeater');
             }
-            if (entryCollection) entryCollection.disabled = select.value !== 'entry';
+            if (contentSet) contentSet.disabled = select.value !== 'content';
         };
         select.addEventListener('change', toggle); toggle();
+    });
+
+    $$('select[name="template_mode"]').forEach((mode) => {
+        const form = mode.closest('form');
+        const customField = $('[data-resource-field="template"]', form);
+        const routeField = $('[data-resource-field="route"]', form);
+        const publishableField = $('[data-resource-field="is_publishable"]', form);
+        const customInput = $('[name="template"]', customField);
+        const sync = () => {
+            const isCustom = mode.value === 'custom';
+            const isDataOnly = mode.value === 'none';
+            if (customField) customField.hidden = !isCustom;
+            if (customInput) customInput.disabled = !isCustom;
+            if (routeField) routeField.hidden = isDataOnly;
+            if (publishableField) publishableField.hidden = isDataOnly;
+        };
+        mode.addEventListener('change', sync);
+        sync();
     });
     $$('[data-set-field-type]').forEach((button) => button.addEventListener('click', () => {
         const root = button.closest('form') || document.getElementById(button.dataset.dialogOpen);
@@ -178,46 +196,46 @@
         refresh();
     });
 
-    $$('[data-entry-picker]').forEach((picker) => {
-        const collection = $('[data-entry-picker-collection]', picker);
-        const searchInput = $('[data-entry-picker-search]', picker);
-        const choices = $$('[data-entry-choice]', picker);
+    $$('[data-content-picker]').forEach((picker) => {
+        const set = $('[data-content-picker-set]', picker);
+        const searchInput = $('[data-content-picker-search]', picker);
+        const choices = $$('[data-content-choice]', picker);
         const filter = () => {
-            const collectionValue = collection?.value || '';
+            const setValue = set?.value || '';
             const query = (searchInput?.value || '').trim().toLowerCase();
             let visible = 0;
-            $$('[data-entry-option]', picker).forEach((item) => {
-                const match = collectionValue !== '' && item.dataset.collection === collectionValue && (query === '' || (item.dataset.search || '').includes(query));
+            $$('[data-content-option]', picker).forEach((item) => {
+                const match = setValue !== '' && item.dataset.set === setValue && (query === '' || (item.dataset.search || '').includes(query));
                 item.hidden = !match;
                 if (match) visible += 1;
             });
-            const empty = $('[data-entry-picker-empty]', picker);
-            if (empty) { empty.hidden = visible !== 0; empty.textContent = collectionValue === '' ? 'Pilih Collection terlebih dahulu.' : 'Tidak ada Entry yang cocok.'; }
+            const empty = $('[data-content-picker-empty]', picker);
+            if (empty) { empty.hidden = visible !== 0; empty.textContent = setValue === '' ? 'Pilih Set terlebih dahulu.' : 'Tidak ada Content yang cocok.'; }
         };
         const updateCount = () => {
-            const count = $('[data-entry-selected-count]', picker);
+            const count = $('[data-content-selected-count]', picker);
             if (count) count.textContent = String(choices.filter((choice) => choice.checked).length);
         };
-        collection?.addEventListener('change', () => {
-            if (!collection.hasAttribute('data-locked')) choices.forEach((choice) => { choice.checked = false; });
+        set?.addEventListener('change', () => {
+            if (!set.hasAttribute('data-locked')) choices.forEach((choice) => { choice.checked = false; });
             updateCount(); filter();
         });
         searchInput?.addEventListener('input', filter);
         choices.forEach((choice) => choice.addEventListener('change', updateCount));
         picker.addEventListener('ceemes:dialog-open', () => {
             const field = picker.previousElementSibling;
-            const selectedValues = $$('input[type="hidden"]', $('[data-entry-picker-inputs]', field)).map((input) => input.value);
+            const selectedValues = $$('input[type="hidden"]', $('[data-content-picker-inputs]', field)).map((input) => input.value);
             choices.forEach((choice) => { choice.checked = selectedValues.includes(choice.value); });
-            if (collection && !collection.hasAttribute('data-locked') && selectedValues.length > 0) {
+            if (set && !set.hasAttribute('data-locked') && selectedValues.length > 0) {
                 const selectedChoice = choices.find((choice) => choice.checked);
-                if (selectedChoice) collection.value = selectedChoice.closest('[data-entry-option]')?.dataset.collection || '';
+                if (selectedChoice) set.value = selectedChoice.closest('[data-content-option]')?.dataset.set || '';
             }
             filter(); updateCount();
         });
-        $('[data-entry-picker-apply]', picker)?.addEventListener('click', () => {
+        $('[data-content-picker-apply]', picker)?.addEventListener('click', () => {
             const field = picker.previousElementSibling;
-            const inputs = $('[data-entry-picker-inputs]', field);
-            const values = $('[data-entry-picker-values]', field);
+            const inputs = $('[data-content-picker-inputs]', field);
+            const values = $('[data-content-picker-values]', field);
             const selected = choices.filter((choice) => choice.checked);
             if (inputs) {
                 inputs.replaceChildren(...selected.map((choice) => {
@@ -227,17 +245,60 @@
                 }));
             }
             if (values) {
-                if (selected.length === 0) values.innerHTML = '<span class="is-placeholder">Belum ada Entry dipilih</span>';
+                if (selected.length === 0) values.innerHTML = '<span class="is-placeholder">Belum ada Content dipilih</span>';
                 else values.replaceChildren(...selected.map((choice) => {
                     const chip = document.createElement('span');
                     chip.textContent = choice.dataset.label || choice.value;
-                    const small = document.createElement('small'); small.textContent = choice.dataset.collectionLabel || ''; chip.appendChild(small);
+                    const small = document.createElement('small'); small.textContent = choice.dataset.setLabel || ''; chip.appendChild(small);
                     return chip;
                 }));
             }
             picker.close();
         });
         filter(); updateCount();
+    });
+    $$('[data-relation-picker]').forEach((picker) => {
+        const choices = $$('[data-relation-choice]', picker);
+        const updateCount = () => {
+            const count = $('[data-relation-selected-count]', picker);
+            if (count) count.textContent = String(choices.filter((choice) => choice.checked).length);
+        };
+        choices.forEach((choice) => choice.addEventListener('change', updateCount));
+        picker.addEventListener('ceemes:dialog-open', () => {
+            const field = picker.previousElementSibling;
+            const inputs = $('[data-relation-picker-inputs]', field);
+            const selectedValues = $$('input[type="hidden"]', inputs).map((input) => input.value);
+            choices.forEach((choice) => { choice.checked = selectedValues.includes(choice.value); });
+            updateCount();
+        });
+        $('[data-relation-picker-apply]', picker)?.addEventListener('click', () => {
+            const field = picker.previousElementSibling;
+            const inputs = $('[data-relation-picker-inputs]', field);
+            const values = $('[data-relation-picker-values]', field);
+            const selected = choices.filter((choice) => choice.checked);
+            if (inputs) inputs.replaceChildren(...selected.map((choice) => {
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden'; hidden.name = picker.dataset.inputName; hidden.value = choice.value;
+                return hidden;
+            }));
+            if (values) {
+                if (selected.length === 0) {
+                    const placeholder = document.createElement('span');
+                    placeholder.className = 'is-placeholder';
+                    placeholder.textContent = picker.dataset.emptyLabel || 'Belum ada pilihan';
+                    values.replaceChildren(placeholder);
+                } else values.replaceChildren(...selected.map((choice) => {
+                    const chip = document.createElement('span');
+                    chip.textContent = choice.dataset.label || choice.value;
+                    const small = document.createElement('small');
+                    small.textContent = choice.dataset.meta || '';
+                    chip.appendChild(small);
+                    return chip;
+                }));
+            }
+            picker.close();
+        });
+        updateCount();
     });
     $$('[data-slug-source]').forEach((input) => input.addEventListener('input', () => {
         const target = document.querySelector(input.dataset.slugSource);

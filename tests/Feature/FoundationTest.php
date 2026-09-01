@@ -24,16 +24,16 @@ final class FoundationTest extends TestCase
     public function test_all_ceemes_tables_are_migrated(): void
     {
         $tables = [
-            'ceemes_collections',
-            'ceemes_blueprints',
-            'ceemes_blueprint_fields',
-            'ceemes_entries',
+            'ceemes_sets',
+            'ceemes_set_fields',
+            'ceemes_contents',
             'ceemes_section_types',
             'ceemes_section_fields',
             'ceemes_sections',
-            'ceemes_taxonomies',
-            'ceemes_terms',
-            'ceemes_entry_term',
+            'ceemes_content_section',
+            'ceemes_category_groups',
+            'ceemes_categories',
+            'ceemes_content_category',
             'ceemes_navigations',
             'ceemes_navigation_items',
             'ceemes_settings',
@@ -44,14 +44,15 @@ final class FoundationTest extends TestCase
         foreach ($tables as $table) {
             self::assertTrue(Schema::hasTable($table), "Missing table: {$table}");
         }
+
     }
 
     public function test_cms_tables_use_uuid_primary_keys_without_integer_ids(): void
     {
-        self::assertTrue(Schema::hasColumn('ceemes_collections', 'uuid'));
-        self::assertFalse(Schema::hasColumn('ceemes_collections', 'id'));
-        self::assertTrue(Schema::hasColumn('ceemes_entries', 'uuid'));
-        self::assertFalse(Schema::hasColumn('ceemes_entries', 'id'));
+        self::assertTrue(Schema::hasColumn('ceemes_sets', 'uuid'));
+        self::assertFalse(Schema::hasColumn('ceemes_sets', 'id'));
+        self::assertTrue(Schema::hasColumn('ceemes_contents', 'uuid'));
+        self::assertFalse(Schema::hasColumn('ceemes_contents', 'id'));
         self::assertTrue(Schema::hasColumn('ceemes_media', 'uuid'));
         self::assertFalse(Schema::hasColumn('ceemes_media', 'id'));
     }
@@ -67,36 +68,26 @@ final class FoundationTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $collectionUuid = (string) Str::uuid();
-        $blueprintUuid = (string) Str::uuid();
-        $entryUuid = (string) Str::uuid();
+        $setUuid = (string) Str::uuid();
+        $contentUuid = (string) Str::uuid();
 
-        DB::table('ceemes_collections')->insert([
-            'uuid' => $collectionUuid,
+        DB::table('ceemes_sets')->insert([
+            'uuid' => $setUuid,
             'name' => 'Pages',
             'handle' => 'pages',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        DB::table('ceemes_blueprints')->insert([
-            'uuid' => $blueprintUuid,
-            'collection_uuid' => $collectionUuid,
-            'name' => 'Page',
-            'handle' => 'page',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        DB::table('ceemes_entries')->insert([
-            'uuid' => $entryUuid,
-            'collection_uuid' => $collectionUuid,
-            'blueprint_uuid' => $blueprintUuid,
+        DB::table('ceemes_contents')->insert([
+            'uuid' => $contentUuid,
+            'set_uuid' => $setUuid,
             'title' => 'Home',
             'slug' => 'home',
             'data' => '{}',
             'status' => 'draft',
             'created_by' => 1,
+            'uri' => '/home',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -104,7 +95,7 @@ final class FoundationTest extends TestCase
         DB::table('users')->where('id', 1)->delete();
 
         self::assertNull(
-            DB::table('ceemes_entries')->where('uuid', $entryUuid)->value('created_by'),
+            DB::table('ceemes_contents')->where('uuid', $contentUuid)->value('created_by'),
         );
     }
 }

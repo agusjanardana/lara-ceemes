@@ -4,59 +4,61 @@ declare(strict_types=1);
 
 namespace LaraCeemes\Http\Controllers\Admin;
 
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use LaraCeemes\Actions\Blueprints\CreateBlueprintField;
-use LaraCeemes\Actions\Blueprints\DeleteBlueprintField;
-use LaraCeemes\Actions\Blueprints\UpdateBlueprintField;
+use LaraCeemes\Actions\Sets\CreateSetField;
+use LaraCeemes\Actions\Sets\DeleteSetField;
+use LaraCeemes\Actions\Sets\UpdateSetField;
 use LaraCeemes\Fields\FieldRegistry;
-use LaraCeemes\Models\Blueprint;
-use LaraCeemes\Models\BlueprintField;
-use LaraCeemes\Models\Collection;
-use LaraCeemes\Models\SectionType;
+use LaraCeemes\Models\Content;
+use LaraCeemes\Models\Set;
+use LaraCeemes\Models\SetField;
 
 final class FieldController extends AdminController
 {
     public function __construct(private readonly FieldRegistry $registry) {}
 
-    public function index(Blueprint $blueprint): View
-    {
-        return $this->render('ceemes::admin.fields.index', [
-            'blueprint' => $blueprint,
-            'fields' => $blueprint->fields()->get(),
-            'fieldTypes' => array_keys($this->registry->all()),
-            'sectionTypes' => SectionType::query()->orderBy('name')->get(),
-            'collections' => Collection::query()->orderBy('name')->get(),
-        ]);
-    }
-
-    public function store(Request $request, Blueprint $blueprint, CreateBlueprintField $action): RedirectResponse
+    public function store(Request $request, Set $set, CreateSetField $action): RedirectResponse
     {
         $data = $request->all();
         $data['config'] = $this->fieldConfig($request);
-        $action->execute($blueprint, $data);
+        $action->execute($set, $data);
 
-        return $this->success('ceemes.admin.fields.index', 'Field created.', $blueprint);
+        return $this->redirectToContent($request, $set, 'Fixed Field ditambahkan.');
     }
 
-    public function update(Request $request, BlueprintField $field, UpdateBlueprintField $action): RedirectResponse
+    public function update(Request $request, SetField $field, UpdateSetField $action): RedirectResponse
     {
         $data = $request->all();
         $data['config'] = $this->fieldConfig($request);
         $action->execute($field, $data);
 
-        return $this->success('ceemes.admin.fields.index', 'Field updated.', $field->blueprint);
+        return $this->redirectToContent($request, $field->set, 'Fixed Field diperbarui.');
     }
 
-    public function destroy(BlueprintField $field, DeleteBlueprintField $action): RedirectResponse
+    public function destroy(Request $request, SetField $field, DeleteSetField $action): RedirectResponse
     {
-        $blueprint = $field->blueprint;
+        $set = $field->set;
         $action->execute($field);
 
-        return $this->success('ceemes.admin.fields.index', 'Field deleted.', $blueprint);
+        return $this->redirectToContent($request, $set, 'Fixed Field dihapus.');
+    }
+
+    private function redirectToContent(Request $request, Set $set, string $message): RedirectResponse
+    {
+        $contentUuid = $request->string('redirect_content_uuid')->toString();
+        $content = Content::query()
+            ->where('set_uuid', $set->uuid)
+            ->when($contentUuid !== '', fn ($query) => $query->whereKey($contentUuid))
+            ->first();
+
+        if ($content !== null) {
+            return $this->success('ceemes.admin.contents.edit', $message, $content);
+        }
+
+        return $this->success('ceemes.admin.contents.index', $message, $set);
     }
 
     /** @return array<string, mixed> */
@@ -87,16 +89,16 @@ final class FieldController extends AdminController
             unset($config['allowed']);
         }
 
-        if ($request->string('type')->toString() === 'entry') {
-            $collection = is_string($config['collection'] ?? null) ? $config['collection'] : '';
+        if (in_array($request->string('type')->toString(), ['content', 'content'], true)) {
+            $set = is_string($config['set'] ?? null) ? $config['set'] : '';
 
-            if (! Collection::query()->where('handle', $collection)->exists()) {
+            if (! Set::query()->where('handle', $set)->exists()) {
                 throw ValidationException::withMessages([
-                    'config.collection' => 'Pilih Collection sumber untuk Entry field.',
+                    'config.set' => 'Pilih Set sumber untuk Content field.',
                 ]);
             }
         } else {
-            unset($config['collection']);
+            unset($config['set']);
         }
 
         if ($request->string('type')->toString() === 'repeater') {

@@ -7,16 +7,15 @@ namespace LaraCeemes\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
-use LaraCeemes\Models\Blueprint;
-use LaraCeemes\Models\BlueprintField;
-use LaraCeemes\Models\Collection;
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Category;
+use LaraCeemes\Models\CategoryGroup;
+use LaraCeemes\Models\Content;
 use LaraCeemes\Models\Navigation;
 use LaraCeemes\Models\SectionField;
 use LaraCeemes\Models\SectionType;
+use LaraCeemes\Models\Set;
+use LaraCeemes\Models\SetField;
 use LaraCeemes\Models\Setting;
-use LaraCeemes\Models\Taxonomy;
-use LaraCeemes\Models\Term;
 use LaraCeemes\Tests\Fixtures\User;
 use LaraCeemes\Tests\TestCase;
 
@@ -26,66 +25,74 @@ final class CliTest extends TestCase
 
     public function test_content_structure_commands_use_the_application_actions(): void
     {
-        $this->artisan('ceemes:make-collection', [
+        $this->artisan('ceemes:make-set', [
             'handle' => 'pages',
             '--name' => 'Website Pages',
             '--route' => '/{slug}',
         ])->assertSuccessful();
-        $this->artisan('ceemes:make-blueprint', [
-            'handle' => 'landing-page',
-            '--collection' => 'pages',
-        ])->assertSuccessful();
-        $this->artisan('ceemes:make-field', [
+        $this->artisan('ceemes:make-set-field', [
             'handle' => 'headline',
-            '--blueprint' => 'landing-page',
+            '--set' => 'pages',
             '--type' => 'text',
         ])->assertSuccessful();
 
-        self::assertSame('Website Pages', Collection::query()->sole()->name);
-        self::assertSame('landing-page', Blueprint::query()->sole()->handle);
-        self::assertSame('headline', BlueprintField::query()->sole()->handle);
+        self::assertSame('Website Pages', Set::query()->sole()->name);
+        self::assertSame('headline', SetField::query()->sole()->handle);
     }
 
-    public function test_entry_command_creates_entry_with_json_data(): void
+    public function test_content_command_creates_content_with_json_data(): void
     {
-        $this->artisan('ceemes:make-collection', ['handle' => 'pages'])->assertSuccessful();
-        $this->artisan('ceemes:make-blueprint', [
-            'handle' => 'page',
-            '--collection' => 'pages',
-        ])->assertSuccessful();
-        $this->artisan('ceemes:make-field', [
+        $this->artisan('ceemes:make-set', ['handle' => 'pages'])->assertSuccessful();
+        $this->artisan('ceemes:make-set-field', [
             'handle' => 'headline',
-            '--blueprint' => 'page',
+            '--set' => 'pages',
         ])->assertSuccessful();
-        $this->artisan('ceemes:make-entry', [
-            '--collection' => 'pages',
-            '--blueprint' => 'page',
+        $this->artisan('ceemes:make-content', [
+            '--set' => 'pages',
             '--title' => 'Home',
             '--status' => 'published',
             '--data' => '{"headline":"Welcome"}',
         ])->assertSuccessful();
 
-        self::assertSame('Welcome', Entry::query()->sole()->get('headline'));
+        self::assertSame('Welcome', Content::query()->sole()->get('headline'));
     }
 
-    public function test_section_taxonomy_term_and_navigation_commands_work(): void
+    public function test_set_content_commands_use_direct_set_fields(): void
+    {
+        $this->artisan('ceemes:make-set', ['handle' => 'articles'])->assertSuccessful();
+        $this->artisan('ceemes:make-set-field', [
+            'handle' => 'excerpt',
+            '--set' => 'articles',
+            '--type' => 'textarea',
+        ])->assertSuccessful();
+        $this->artisan('ceemes:make-content', [
+            '--set' => 'articles',
+            '--title' => 'First Article',
+            '--data' => '{"excerpt":"Summary"}',
+        ])->assertSuccessful();
+
+        self::assertSame('Summary', Content::query()->sole()->get('excerpt'));
+        self::assertSame('excerpt', Set::query()->sole()->fields()->sole()->handle);
+    }
+
+    public function test_section_category_and_navigation_commands_work(): void
     {
         $this->artisan('ceemes:make-section', ['handle' => 'banner'])->assertSuccessful();
         $this->artisan('ceemes:make-section-field', [
             'handle' => 'title',
             '--section' => 'banner',
         ])->assertSuccessful();
-        $this->artisan('ceemes:make-taxonomy', ['handle' => 'categories'])->assertSuccessful();
-        $this->artisan('ceemes:make-term', [
+        $this->artisan('ceemes:make-category-group', ['handle' => 'categories'])->assertSuccessful();
+        $this->artisan('ceemes:make-category', [
             'slug' => 'technology',
-            '--taxonomy' => 'categories',
+            '--group' => 'categories',
         ])->assertSuccessful();
         $this->artisan('ceemes:make-navigation', ['handle' => 'header'])->assertSuccessful();
 
         self::assertSame('banner', SectionType::query()->sole()->handle);
         self::assertSame('title', SectionField::query()->sole()->handle);
-        self::assertSame('categories', Taxonomy::query()->sole()->handle);
-        self::assertSame('technology', Term::query()->sole()->slug);
+        self::assertSame('categories', CategoryGroup::query()->sole()->handle);
+        self::assertSame('technology', Category::query()->sole()->slug);
         self::assertSame('header', Navigation::query()->sole()->handle);
     }
 

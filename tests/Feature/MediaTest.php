@@ -8,17 +8,16 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-use LaraCeemes\Actions\Blueprints\CreateBlueprint;
-use LaraCeemes\Actions\Blueprints\CreateBlueprintField;
-use LaraCeemes\Actions\Collections\CreateCollection;
-use LaraCeemes\Actions\Entries\CreateEntry;
-use LaraCeemes\Actions\Entries\UpdateEntry;
+use LaraCeemes\Actions\Contents\CreateContent;
+use LaraCeemes\Actions\Contents\UpdateContent;
 use LaraCeemes\Actions\Media\DeleteMedia;
 use LaraCeemes\Actions\Media\UpdateMedia;
 use LaraCeemes\Actions\Media\UploadMedia;
+use LaraCeemes\Actions\Sets\CreateSet;
+use LaraCeemes\Actions\Sets\CreateSetField;
 use LaraCeemes\Exceptions\MediaInUse;
 use LaraCeemes\Facades\Media as MediaFacade;
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Content;
 use LaraCeemes\Models\Media;
 use LaraCeemes\Tests\TestCase;
 
@@ -69,13 +68,13 @@ final class MediaTest extends TestCase
     public function test_referenced_media_is_reported_and_cannot_be_deleted(): void
     {
         $media = $this->uploadImage();
-        $entry = $this->makeEntryWithMedia($media);
+        $content = $this->makeContentWithMedia($media);
         $usages = MediaFacade::usages($media);
 
         self::assertCount(1, $usages);
-        self::assertSame('entry', $usages[0]->sourceType);
+        self::assertSame('content', $usages[0]->sourceType);
         self::assertSame('featured_image', $usages[0]->fieldHandle);
-        self::assertSame($media->uuid, $entry->media('featured_image')?->uuid);
+        self::assertSame($media->uuid, $content->media('featured_image')?->uuid);
 
         try {
             $this->app->make(DeleteMedia::class)->execute($media);
@@ -91,9 +90,9 @@ final class MediaTest extends TestCase
     public function test_media_can_be_deleted_after_references_are_removed(): void
     {
         $media = $this->uploadImage();
-        $entry = $this->makeEntryWithMedia($media);
+        $content = $this->makeContentWithMedia($media);
 
-        $this->app->make(UpdateEntry::class)->execute($entry, [
+        $this->app->make(UpdateContent::class)->execute($content, [
             'data' => ['featured_image' => null],
         ]);
         $this->app->make(DeleteMedia::class)->execute($media);
@@ -111,17 +110,16 @@ final class MediaTest extends TestCase
         );
     }
 
-    private function makeEntryWithMedia(Media $media): Entry
+    private function makeContentWithMedia(Media $media): Content
     {
-        $collection = $this->app->make(CreateCollection::class)->execute(['name' => 'Pages']);
-        $blueprint = $this->app->make(CreateBlueprint::class)->execute($collection, ['name' => 'Page']);
-        $this->app->make(CreateBlueprintField::class)->execute($blueprint, [
+        $set = $this->app->make(CreateSet::class)->execute(['name' => 'Pages']);
+        $this->app->make(CreateSetField::class)->execute($set, [
             'handle' => 'featured_image',
             'label' => 'Featured Image',
             'type' => 'media',
         ]);
 
-        return $this->app->make(CreateEntry::class)->execute($blueprint, [
+        return $this->app->make(CreateContent::class)->execute($set, [
             'title' => 'Home',
             'data' => ['featured_image' => $media->uuid],
         ]);

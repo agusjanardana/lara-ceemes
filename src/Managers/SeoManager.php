@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LaraCeemes\Managers;
 
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Content;
 use LaraCeemes\Support\SeoData;
 
 final class SeoManager
@@ -26,19 +26,19 @@ final class SeoManager
         );
     }
 
-    public function forEntry(Entry $entry): SeoData
+    public function forContent(Content $content): SeoData
     {
         $global = $this->global();
-        $entrySeo = $entry->seo();
+        $contentSeo = $content->seo();
 
         return new SeoData(
-            title: $this->nullableString($entrySeo['title'] ?? null) ?? $global->title,
-            description: $this->nullableString($entrySeo['description'] ?? null) ?? $global->description,
-            ogImage: $this->nullableString($entrySeo['og_image'] ?? null) ?? $global->ogImage,
+            title: $this->nullableString($contentSeo['title'] ?? null) ?? $global->title,
+            description: $this->nullableString($contentSeo['description'] ?? null) ?? $global->description,
+            ogImage: $this->nullableString($contentSeo['og_image'] ?? null) ?? $global->ogImage,
             twitterCard: $global->twitterCard,
-            robotsIndex: isset($entrySeo['robots_index']) ? (bool) $entrySeo['robots_index'] : $global->robotsIndex,
-            robotsFollow: isset($entrySeo['robots_follow']) ? (bool) $entrySeo['robots_follow'] : $global->robotsFollow,
-            canonicalUrl: $this->nullableString($entrySeo['canonical_url'] ?? null) ?? $global->canonicalUrl,
+            robotsIndex: isset($contentSeo['robots_index']) ? (bool) $contentSeo['robots_index'] : $global->robotsIndex,
+            robotsFollow: isset($contentSeo['robots_follow']) ? (bool) $contentSeo['robots_follow'] : $global->robotsFollow,
+            canonicalUrl: $this->nullableString($contentSeo['canonical_url'] ?? null) ?? $global->canonicalUrl,
             siteTitle: $global->siteTitle,
             titleSeparator: $global->titleSeparator,
         );

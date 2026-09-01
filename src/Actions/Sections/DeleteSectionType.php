@@ -14,7 +14,7 @@ final class DeleteSectionType extends Action
     {
         if ($sectionType->sections()->exists()) {
             throw ValidationException::withMessages([
-                'section_type' => "Section Type [{$sectionType->handle}] is still used by Entries.",
+                'section_type' => "Section Type [{$sectionType->handle}] is still used by Content.",
             ]);
         }
 

@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace LaraCeemes\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use LaraCeemes\Actions\Blueprints\CreateBlueprint;
-use LaraCeemes\Actions\Blueprints\CreateBlueprintField;
-use LaraCeemes\Actions\Collections\CreateCollection;
-use LaraCeemes\Actions\Entries\CreateEntry;
+use LaraCeemes\Actions\Contents\CreateContent;
 use LaraCeemes\Actions\Sections\CreateSection;
 use LaraCeemes\Actions\Sections\CreateSectionField;
 use LaraCeemes\Actions\Sections\CreateSectionType;
@@ -18,7 +16,10 @@ use LaraCeemes\Actions\Sections\DuplicateSection;
 use LaraCeemes\Actions\Sections\ReorderSections;
 use LaraCeemes\Actions\Sections\SetSectionEnabled;
 use LaraCeemes\Actions\Sections\UpdateSection;
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Actions\Sets\CreateSet;
+use LaraCeemes\Actions\Sets\CreateSetField;
+use LaraCeemes\Facades\Section as SectionFacade;
+use LaraCeemes\Models\Content;
 use LaraCeemes\Models\Section;
 use LaraCeemes\Models\SectionType;
 use LaraCeemes\Tests\TestCase;
@@ -29,9 +30,9 @@ final class SectionsTest extends TestCase
 
     public function test_allowed_section_can_be_created_with_validated_data(): void
     {
-        [$entry, $banner] = $this->makeSectionEnvironment();
+        [$content, $banner] = $this->makeSectionEnvironment();
 
-        $section = $this->app->make(CreateSection::class)->execute($entry, $banner, [
+        $section = $this->app->make(CreateSection::class)->execute($content, $banner, [
             'key' => 'hero',
             'data' => ['title' => '  Welcome  '],
         ]);
@@ -39,34 +40,34 @@ final class SectionsTest extends TestCase
         self::assertSame('Welcome', $section->get('title'));
         self::assertSame('banner', $section->handle());
         self::assertTrue($section->type()->is($banner));
-        self::assertSame($section->uuid, $entry->section('hero')?->uuid);
-        self::assertSame($section->uuid, $entry->section('banner')?->uuid);
+        self::assertSame($section->uuid, $content->section('hero')?->uuid);
+        self::assertSame($section->uuid, $content->section('banner')?->uuid);
     }
 
-    public function test_section_type_must_be_explicitly_allowed_by_blueprint(): void
+    public function test_section_type_must_be_explicitly_allowed_by_set(): void
     {
-        [$entry] = $this->makeSectionEnvironment();
+        [$content] = $this->makeSectionEnvironment();
         $gallery = $this->app->make(CreateSectionType::class)->execute(['name' => 'Gallery']);
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Section Type [gallery] is not allowed');
 
-        $this->app->make(CreateSection::class)->execute($entry, $gallery, []);
+        $this->app->make(CreateSection::class)->execute($content, $gallery, []);
     }
 
     public function test_section_data_honors_required_section_fields(): void
     {
-        [$entry, $banner] = $this->makeSectionEnvironment();
+        [$content, $banner] = $this->makeSectionEnvironment();
 
         $this->expectException(ValidationException::class);
 
-        $this->app->make(CreateSection::class)->execute($entry, $banner, ['data' => []]);
+        $this->app->make(CreateSection::class)->execute($content, $banner, ['data' => []]);
     }
 
     public function test_sections_can_be_updated_disabled_and_filtered(): void
     {
-        [$entry, $banner] = $this->makeSectionEnvironment();
-        $section = $this->app->make(CreateSection::class)->execute($entry, $banner, [
+        [$content, $banner] = $this->makeSectionEnvironment();
+        $section = $this->app->make(CreateSection::class)->execute($content, $banner, [
             'data' => ['title' => 'Welcome'],
         ]);
 
@@ -76,20 +77,20 @@ final class SectionsTest extends TestCase
         $this->app->make(SetSectionEnabled::class)->execute($updated, false);
 
         self::assertSame('Updated', $updated->get('title'));
-        self::assertCount(0, $entry->sections());
-        self::assertCount(1, $entry->sections(includeDisabled: true));
-        self::assertNull($entry->section('banner'));
+        self::assertCount(0, $content->sections());
+        self::assertCount(1, $content->sections(includeDisabled: true));
+        self::assertNull($content->section('banner'));
     }
 
     public function test_sections_can_be_duplicated_and_reordered(): void
     {
-        [$entry, $banner, $cta] = $this->makeSectionEnvironment();
+        [$content, $banner, $cta] = $this->makeSectionEnvironment();
         $create = $this->app->make(CreateSection::class);
-        $hero = $create->execute($entry, $banner, [
+        $hero = $create->execute($content, $banner, [
             'key' => 'hero',
             'data' => ['title' => 'Welcome'],
         ]);
-        $callToAction = $create->execute($entry, $cta, [
+        $callToAction = $create->execute($content, $cta, [
             'key' => 'bottom_cta',
             'data' => ['title' => 'Contact Us'],
         ]);
@@ -97,9 +98,9 @@ final class SectionsTest extends TestCase
 
         self::assertNotSame($callToAction->uuid, $duplicate->uuid);
         self::assertSame($callToAction->data(), $duplicate->data());
-        self::assertCount(2, $entry->sectionsOfType('cta'));
+        self::assertCount(2, $content->sectionsOfType('cta'));
 
-        $this->app->make(ReorderSections::class)->execute($entry, [
+        $this->app->make(ReorderSections::class)->execute($content, [
             $duplicate->uuid,
             $hero->uuid,
             $callToAction->uuid,
@@ -107,33 +108,55 @@ final class SectionsTest extends TestCase
 
         self::assertSame(
             [$duplicate->uuid, $hero->uuid, $callToAction->uuid],
-            $entry->sections()->pluck('uuid')->all(),
+            $content->sections()->pluck('uuid')->all(),
         );
     }
 
-    public function test_deleting_section_closes_the_sort_order_gap(): void
+    public function test_detached_section_can_be_deleted_without_changing_other_placements(): void
     {
-        [$entry, $banner, $cta] = $this->makeSectionEnvironment();
+        [$content, $banner, $cta] = $this->makeSectionEnvironment();
         $create = $this->app->make(CreateSection::class);
-        $first = $create->execute($entry, $banner, ['data' => ['title' => 'First']]);
-        $second = $create->execute($entry, $cta, ['data' => ['title' => 'Second']]);
+        $first = $create->execute($content, $banner, ['data' => ['title' => 'First']]);
+        $second = $create->execute($content, $cta, ['data' => ['title' => 'Second']]);
 
+        $content->placedSections()->detach($first->uuid);
         $this->app->make(DeleteSection::class)->execute($first);
 
         self::assertNull(Section::query()->find($first->uuid));
-        self::assertSame(1, $second->refresh()->sort_order);
+        self::assertSame(1, $content->placedSections()->whereKey($second->uuid)->sole()->pivot->sort_order);
     }
 
-    /** @return array{Entry, SectionType, SectionType} */
+    public function test_one_shared_section_can_be_placed_on_multiple_contents(): void
+    {
+        [$home, $banner] = $this->makeSectionEnvironment();
+        $contact = $this->app->make(CreateContent::class)->execute($home->set, ['title' => 'Contact']);
+        $section = $this->app->make(CreateSection::class)->execute($home, $banner, [
+            'name' => 'Shared Hero',
+            'data' => ['title' => 'Hello everyone'],
+        ]);
+
+        $contact->placedSections()->attach($section->uuid, [
+            'uuid' => (string) Str::uuid(),
+            'region' => 'sections',
+            'sort_order' => 1,
+            'is_enabled' => true,
+        ]);
+
+        self::assertSame($section->uuid, $home->sections()->sole()->uuid);
+        self::assertSame($section->uuid, $contact->sections()->sole()->uuid);
+        self::assertCount(2, $section->contents);
+        self::assertSame($section->uuid, SectionFacade::forContent($contact)->enabled()->get()->sole()->uuid);
+    }
+
+    /** @return array{Content, SectionType, SectionType} */
     private function makeSectionEnvironment(): array
     {
-        $collection = $this->app->make(CreateCollection::class)->execute(['name' => 'Pages']);
-        $blueprint = $this->app->make(CreateBlueprint::class)->execute($collection, ['name' => 'Landing Page']);
-        $entry = $this->app->make(CreateEntry::class)->execute($blueprint, ['title' => 'Home']);
+        $set = $this->app->make(CreateSet::class)->execute(['name' => 'Pages']);
+        $content = $this->app->make(CreateContent::class)->execute($set, ['title' => 'Home']);
         $banner = $this->app->make(CreateSectionType::class)->execute(['name' => 'Banner']);
         $cta = $this->app->make(CreateSectionType::class)->execute(['name' => 'CTA']);
 
-        $this->app->make(CreateBlueprintField::class)->execute($blueprint, [
+        $this->app->make(CreateSetField::class)->execute($set, [
             'handle' => 'sections',
             'label' => 'Sections',
             'type' => 'sections',
@@ -152,6 +175,6 @@ final class SectionsTest extends TestCase
             'config' => ['required' => true],
         ]);
 
-        return [$entry, $banner, $cta];
+        return [$content, $banner, $cta];
     }
 }

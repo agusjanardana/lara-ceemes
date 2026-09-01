@@ -26,6 +26,11 @@ return [
         'middleware' => ['web'],
     ],
 
+    'views' => [
+        'auto_scaffold' => env('CEEMES_AUTO_SCAFFOLD_VIEWS', true),
+        'path' => null,
+    ],
+
     'cache' => [
         'enabled' => env('CEEMES_CACHE_ENABLED', true),
         'store' => env('CEEMES_CACHE_STORE'),

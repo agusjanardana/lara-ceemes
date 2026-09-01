@@ -10,11 +10,12 @@ use Illuminate\Support\ServiceProvider;
 use LaraCeemes\Contracts\FieldType;
 use LaraCeemes\Fields\FieldRegistry;
 use LaraCeemes\Fields\Types\BooleanField;
+use LaraCeemes\Fields\Types\CategoryField;
 use LaraCeemes\Fields\Types\ColorField;
+use LaraCeemes\Fields\Types\ContentField;
 use LaraCeemes\Fields\Types\DateField;
 use LaraCeemes\Fields\Types\DatetimeField;
 use LaraCeemes\Fields\Types\EmailField;
-use LaraCeemes\Fields\Types\EntryField;
 use LaraCeemes\Fields\Types\GroupField;
 use LaraCeemes\Fields\Types\MediaField;
 use LaraCeemes\Fields\Types\NumberField;
@@ -23,19 +24,19 @@ use LaraCeemes\Fields\Types\RichtextField;
 use LaraCeemes\Fields\Types\SectionsField;
 use LaraCeemes\Fields\Types\SelectField;
 use LaraCeemes\Fields\Types\SeoField;
-use LaraCeemes\Fields\Types\TaxonomyField;
 use LaraCeemes\Fields\Types\TextareaField;
 use LaraCeemes\Fields\Types\TextField;
 use LaraCeemes\Fields\Types\UrlField;
 use LaraCeemes\Http\Controllers\HomeController;
 use LaraCeemes\Http\Controllers\PublicContentController;
-use LaraCeemes\Managers\CollectionManager;
-use LaraCeemes\Managers\EntryManager;
+use LaraCeemes\Managers\CategoryManager;
+use LaraCeemes\Managers\ContentManager;
 use LaraCeemes\Managers\MediaManager;
 use LaraCeemes\Managers\NavigationManager;
+use LaraCeemes\Managers\SectionManager;
 use LaraCeemes\Managers\SeoManager;
+use LaraCeemes\Managers\SetManager;
 use LaraCeemes\Managers\SettingManager;
-use LaraCeemes\Managers\TaxonomyManager;
 use LaraCeemes\Support\CeemesCache;
 use LaraCeemes\Support\SuperAdminRegistry;
 
@@ -50,13 +51,14 @@ final class LaraCeemesServiceProvider extends ServiceProvider
 
         $this->app->singleton(CeemesCache::class);
         $this->app->singleton(SuperAdminRegistry::class);
-        $this->app->singleton(CollectionManager::class);
-        $this->app->singleton(EntryManager::class);
+        $this->app->singleton(SetManager::class);
+        $this->app->singleton(ContentManager::class);
         $this->app->singleton(MediaManager::class);
-        $this->app->singleton(TaxonomyManager::class);
+        $this->app->singleton(CategoryManager::class);
         $this->app->singleton(NavigationManager::class);
         $this->app->singleton(SettingManager::class);
         $this->app->singleton(SeoManager::class);
+        $this->app->singleton(SectionManager::class);
         $this->app->singleton(FieldRegistry::class, function ($app): FieldRegistry {
             $registry = new FieldRegistry($app);
 
@@ -117,14 +119,13 @@ final class LaraCeemesServiceProvider extends ServiceProvider
                 Console\Commands\InstallCommand::class,
                 Console\Commands\StatusCommand::class,
                 Console\Commands\ClearCacheCommand::class,
-                Console\Commands\MakeCollectionCommand::class,
-                Console\Commands\MakeBlueprintCommand::class,
-                Console\Commands\MakeFieldCommand::class,
-                Console\Commands\MakeEntryCommand::class,
+                Console\Commands\MakeSetCommand::class,
+                Console\Commands\MakeContentCommand::class,
+                Console\Commands\MakeSetFieldCommand::class,
                 Console\Commands\MakeSectionTypeCommand::class,
                 Console\Commands\MakeSectionFieldCommand::class,
-                Console\Commands\MakeTaxonomyCommand::class,
-                Console\Commands\MakeTermCommand::class,
+                Console\Commands\MakeCategoryGroupCommand::class,
+                Console\Commands\MakeCategoryCommand::class,
                 Console\Commands\MakeNavigationCommand::class,
                 Console\Commands\GetSettingCommand::class,
                 Console\Commands\SetSettingCommand::class,
@@ -151,8 +152,8 @@ final class LaraCeemesServiceProvider extends ServiceProvider
             UrlField::class,
             ColorField::class,
             MediaField::class,
-            TaxonomyField::class,
-            EntryField::class,
+            CategoryField::class,
+            ContentField::class,
             GroupField::class,
             RepeaterField::class,
             SectionsField::class,

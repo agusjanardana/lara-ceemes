@@ -3,20 +3,21 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
-use LaraCeemes\Http\Controllers\Admin\BlueprintController;
-use LaraCeemes\Http\Controllers\Admin\CollectionController;
+use LaraCeemes\Http\Controllers\Admin\CategoryController;
+use LaraCeemes\Http\Controllers\Admin\CategoryGroupController;
+use LaraCeemes\Http\Controllers\Admin\ContentController;
 use LaraCeemes\Http\Controllers\Admin\DashboardController;
-use LaraCeemes\Http\Controllers\Admin\EntryController;
 use LaraCeemes\Http\Controllers\Admin\FieldController;
 use LaraCeemes\Http\Controllers\Admin\MediaController;
 use LaraCeemes\Http\Controllers\Admin\NavigationController;
 use LaraCeemes\Http\Controllers\Admin\NavigationItemController;
 use LaraCeemes\Http\Controllers\Admin\SectionController;
 use LaraCeemes\Http\Controllers\Admin\SectionFieldController;
+use LaraCeemes\Http\Controllers\Admin\SectionLibraryController;
+use LaraCeemes\Http\Controllers\Admin\SectionPlacementController;
 use LaraCeemes\Http\Controllers\Admin\SectionTypeController;
+use LaraCeemes\Http\Controllers\Admin\SetController;
 use LaraCeemes\Http\Controllers\Admin\SettingController;
-use LaraCeemes\Http\Controllers\Admin\TaxonomyController;
-use LaraCeemes\Http\Controllers\Admin\TermController;
 use LaraCeemes\Http\Controllers\Auth\LoginController;
 
 $adminPrefix = trim((string) config('ceemes.admin.prefix', 'admin'), '/');
@@ -44,28 +45,25 @@ Route::prefix($adminPrefix)
     ->group(function (): void {
         Route::get('/', DashboardController::class)->name('dashboard');
 
-        Route::get('collections', [CollectionController::class, 'index'])->name('collections.index');
-        Route::post('collections', [CollectionController::class, 'store'])->name('collections.store');
-        Route::put('collections/{collection}', [CollectionController::class, 'update'])->name('collections.update');
-        Route::delete('collections/{collection}', [CollectionController::class, 'destroy'])->name('collections.destroy');
+        Route::get('sets', [SetController::class, 'index'])->name('sets.index');
+        Route::post('sets', [SetController::class, 'store'])->name('sets.store');
+        Route::put('sets/{set}', [SetController::class, 'update'])->name('sets.update');
+        Route::delete('sets/{set}', [SetController::class, 'destroy'])->name('sets.destroy');
+        Route::post('sets/{set}/fields', [FieldController::class, 'store'])->name('set-fields.store');
+        Route::put('set-fields/{field}', [FieldController::class, 'update'])->name('set-fields.update');
+        Route::delete('set-fields/{field}', [FieldController::class, 'destroy'])->name('set-fields.destroy');
 
-        Route::get('collections/{collection}/blueprints', [BlueprintController::class, 'index'])->name('blueprints.index');
-        Route::post('collections/{collection}/blueprints', [BlueprintController::class, 'store'])->name('blueprints.store');
-        Route::put('blueprints/{blueprint}', [BlueprintController::class, 'update'])->name('blueprints.update');
-        Route::delete('blueprints/{blueprint}', [BlueprintController::class, 'destroy'])->name('blueprints.destroy');
-        Route::get('blueprints/{blueprint}/fields', [FieldController::class, 'index'])->name('fields.index');
-        Route::post('blueprints/{blueprint}/fields', [FieldController::class, 'store'])->name('fields.store');
-        Route::put('fields/{field}', [FieldController::class, 'update'])->name('fields.update');
-        Route::delete('fields/{field}', [FieldController::class, 'destroy'])->name('fields.destroy');
+        Route::get('sets/{set}/contents', [ContentController::class, 'index'])->name('contents.index');
+        Route::get('sets/{set}/contents/create', [ContentController::class, 'create'])->name('contents.create');
+        Route::post('sets/{set}/contents', [ContentController::class, 'store'])->name('contents.store');
+        Route::get('contents/{content}/edit', [ContentController::class, 'edit'])->name('contents.edit');
+        Route::put('contents/{content}', [ContentController::class, 'update'])->name('contents.update');
+        Route::delete('contents/{content}', [ContentController::class, 'destroy'])->name('contents.destroy');
 
-        Route::get('collections/{collection}/entries', [EntryController::class, 'index'])->name('entries.index');
-        Route::get('collections/{collection}/entries/create', [EntryController::class, 'create'])->name('entries.create');
-        Route::post('collections/{collection}/entries', [EntryController::class, 'store'])->name('entries.store');
-        Route::get('entries/{entry}/edit', [EntryController::class, 'edit'])->name('entries.edit');
-        Route::put('entries/{entry}', [EntryController::class, 'update'])->name('entries.update');
-        Route::delete('entries/{entry}', [EntryController::class, 'destroy'])->name('entries.destroy');
-
-        Route::post('entries/{entry}/sections', [SectionController::class, 'store'])->name('sections.store');
+        Route::post('contents/{content}/sections', [SectionController::class, 'store'])->name('sections.store');
+        Route::get('sections', SectionLibraryController::class)->name('sections.index');
+        Route::post('contents/{content}/section-placements', [SectionPlacementController::class, 'store'])->name('section-placements.store');
+        Route::delete('contents/{content}/section-placements/{section}', [SectionPlacementController::class, 'destroy'])->name('section-placements.destroy');
         Route::put('sections/{section}', [SectionController::class, 'update'])->name('sections.update');
         Route::post('sections/{section}/duplicate', [SectionController::class, 'duplicate'])->name('sections.duplicate');
         Route::post('sections/{section}/toggle', [SectionController::class, 'toggle'])->name('sections.toggle');
@@ -80,14 +78,14 @@ Route::prefix($adminPrefix)
         Route::put('section-fields/{sectionField}', [SectionFieldController::class, 'update'])->name('section-fields.update');
         Route::delete('section-fields/{sectionField}', [SectionFieldController::class, 'destroy'])->name('section-fields.destroy');
 
-        Route::get('taxonomies', [TaxonomyController::class, 'index'])->name('taxonomies.index');
-        Route::post('taxonomies', [TaxonomyController::class, 'store'])->name('taxonomies.store');
-        Route::put('taxonomies/{taxonomy}', [TaxonomyController::class, 'update'])->name('taxonomies.update');
-        Route::delete('taxonomies/{taxonomy}', [TaxonomyController::class, 'destroy'])->name('taxonomies.destroy');
-        Route::get('taxonomies/{taxonomy}/terms', [TermController::class, 'index'])->name('terms.index');
-        Route::post('taxonomies/{taxonomy}/terms', [TermController::class, 'store'])->name('terms.store');
-        Route::put('terms/{term}', [TermController::class, 'update'])->name('terms.update');
-        Route::delete('terms/{term}', [TermController::class, 'destroy'])->name('terms.destroy');
+        Route::get('category-groups', [CategoryGroupController::class, 'index'])->name('category-groups.index');
+        Route::post('category-groups', [CategoryGroupController::class, 'store'])->name('category-groups.store');
+        Route::put('category-groups/{categoryGroup}', [CategoryGroupController::class, 'update'])->name('category-groups.update');
+        Route::delete('category-groups/{categoryGroup}', [CategoryGroupController::class, 'destroy'])->name('category-groups.destroy');
+        Route::get('category-groups/{categoryGroup}/categories', [CategoryController::class, 'index'])->name('categories.index');
+        Route::post('category-groups/{categoryGroup}/categories', [CategoryController::class, 'store'])->name('categories.store');
+        Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
 
         Route::get('navigations', [NavigationController::class, 'index'])->name('navigations.index');
         Route::post('navigations', [NavigationController::class, 'store'])->name('navigations.store');

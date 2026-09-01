@@ -8,8 +8,8 @@
         'text' => 'Teks pendek satu baris', 'textarea' => 'Teks panjang beberapa baris', 'richtext' => 'Konten teks dengan editor',
         'number' => 'Nilai angka', 'boolean' => 'Pilihan aktif atau tidak', 'select' => 'Pilihan dari daftar opsi',
         'date' => 'Tanggal', 'datetime' => 'Tanggal dan waktu', 'email' => 'Alamat email', 'url' => 'Alamat URL',
-        'color' => 'Pemilih warna', 'media' => 'File dari Media Library', 'taxonomy' => 'Relasi ke Taxonomy',
-        'entry' => 'Relasi ke Entry dari Collection', 'group' => 'Kelompok data terstruktur', 'repeater' => 'Data berulang',
+        'color' => 'Pemilih warna', 'media' => 'File dari Media Library',
+        'content' => 'Relasi ke Content dari Set', 'category' => 'Relasi ke Category Group', 'group' => 'Kelompok data terstruktur', 'repeater' => 'Data berulang',
         'sections' => 'Area page builder reusable', 'seo' => 'Data SEO terstruktur',
     ];
 @endphp
@@ -23,7 +23,7 @@
     <div class="ceemes-field"><label>Sort order</label><input type="number" min="0" name="sort_order" value="{{ $field?->sort_order ?? $fields->count() }}"></div>
     <div class="ceemes-field ceemes-field-wide"><label>Options <small>(untuk Select)</small></label><textarea name="config[options_text]" placeholder="news: News&#10;article: Article">{{ $options }}</textarea><small>Satu pilihan per baris dengan format value: Label.</small></div>
     <input type="hidden" name="config[required]" value="0"><label class="ceemes-check"><input type="checkbox" name="config[required]" value="1" @checked((bool)($config['required'] ?? false))> Field wajib diisi</label>
-    <input type="hidden" name="config[multiple]" value="0"><label class="ceemes-check"><input type="checkbox" name="config[multiple]" value="1" @checked((bool)($config['multiple'] ?? false))> Izinkan banyak pilihan <small>(Entry, Media, Taxonomy)</small></label>
+    <input type="hidden" name="config[multiple]" value="0"><label class="ceemes-check"><input type="checkbox" name="config[multiple]" value="1" @checked((bool)($config['multiple'] ?? false))> Izinkan banyak pilihan <small>(Content, Media, Category)</small></label>
     <div class="ceemes-sections-config ceemes-field-wide" data-sections-config>
         <div><strong>Section Types yang diizinkan</strong><p>Pilih blok yang boleh ditambahkan editor pada area ini.</p></div>
         @forelse($sectionTypes as $sectionType)
@@ -32,15 +32,15 @@
             <div class="ceemes-inline-note">Belum ada Section Type. <a href="{{ route('ceemes.admin.section-types.index') }}">Buat Section Type dahulu</a>, lalu kembali ke Field ini.</div>
         @endforelse
     </div>
-    <div class="ceemes-entry-config ceemes-field-wide" data-entry-config>
-        <div><strong>Entry source</strong><p>Tentukan Collection asal Entry yang boleh dipilih editor.</p></div>
-        <div class="ceemes-field"><label>Collection <em>*</em></label><select name="config[collection]" data-entry-collection-config required><option value="">Pilih Collection...</option>@foreach($collections as $collection)<option value="{{ $collection->handle }}" @selected(($config['collection'] ?? '') === $collection->handle)>{{ $collection->name }}</option>@endforeach</select></div>
-        <div class="ceemes-inline-note">Aktifkan “Izinkan banyak pilihan” di atas jika satu field boleh menyimpan beberapa Entry.</div>
+    <div class="ceemes-content-config ceemes-field-wide" data-content-config>
+        <div><strong>Content source</strong><p>Tentukan Set asal Content yang boleh dipilih editor.</p></div>
+        <div class="ceemes-field"><label>Set <em>*</em></label><select name="config[set]" data-content-set-config required><option value="">Pilih Set...</option>@foreach($sets as $set)<option value="{{ $set->handle }}" @selected(($config['set'] ?? '') === $set->handle)>{{ $set->name }}</option>@endforeach</select></div>
+        <div class="ceemes-inline-note">Aktifkan “Izinkan banyak pilihan” di atas jika satu field boleh menyimpan beberapa Content.</div>
     </div>
     <div class="ceemes-repeater-config ceemes-field-wide" data-repeater-config data-next-index="{{ count($repeaterFields) }}">
         <div class="ceemes-repeater-config-header">
             <div><strong>Apa yang akan diulang?</strong><p>Susun subfield untuk satu item. Contoh: gambar, judul, dan deskripsi. Editor nanti menambah atau menghapus item tanpa menulis JSON.</p></div>
-            <button type="button" class="ceemes-button ceemes-button-secondary ceemes-button-small" data-set-field-type="sections">Butuh blok berbeda? Gunakan Sections</button>
+            @if(in_array('sections', $fieldTypes, true))<button type="button" class="ceemes-button ceemes-button-secondary ceemes-button-small" data-set-field-type="sections">Butuh blok berbeda? Gunakan Sections</button>@endif
         </div>
         <div class="ceemes-schema-list" data-repeater-schema-list>
             @foreach($repeaterFields as $schemaIndex => $schema)
@@ -61,8 +61,8 @@
 </div>
 
 <dialog class="ceemes-dialog ceemes-picker-dialog" id="field-type-{{ $formPrefix }}" data-field-type-picker>
-    <div class="ceemes-dialog-header"><div><span class="ceemes-eyebrow">Blueprint Field</span><h2>Pilih Field Type</h2></div><button type="button" class="ceemes-dialog-close" data-dialog-close>&times;</button></div>
-    <div class="ceemes-picker-toolbar"><label class="ceemes-search-box"><span>Search</span><input type="search" placeholder="Cari text, media, entry..." data-picker-search></label></div>
+    <div class="ceemes-dialog-header"><div><span class="ceemes-eyebrow">Set Field</span><h2>Pilih Field Type</h2></div><button type="button" class="ceemes-dialog-close" data-dialog-close>&times;</button></div>
+    <div class="ceemes-picker-toolbar"><label class="ceemes-search-box"><span>Search</span><input type="search" placeholder="Cari text, media, content..." data-picker-search></label></div>
     <div class="ceemes-type-grid">
         @foreach($fieldTypes as $type)
             <button type="button" class="ceemes-type-option {{ $selectedType === $type ? 'is-selected' : '' }}" data-field-type-option="{{ $type }}" data-label="{{ $type === 'sections' ? 'Sections (Page Builder)' : ucfirst($type) }}" data-description="{{ $typeDescriptions[$type] ?? 'Field type' }}" data-picker-item data-search="{{ strtolower($type.' '.($typeDescriptions[$type] ?? '')) }}"><span>{{ strtoupper(substr($type, 0, 2)) }}</span><div><strong>{{ $type === 'sections' ? 'Sections (Page Builder)' : ucfirst($type) }}</strong><small>{{ $typeDescriptions[$type] ?? 'Field type' }}</small></div></button>

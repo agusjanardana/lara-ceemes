@@ -75,6 +75,6 @@ final class NavigationItem extends CeemesModel
             return Route::has($this->target) ? route($this->target) : null;
         }
 
-        return Entry::query()->find($this->target)?->publicUrl();
+        return Content::query()->find($this->target)?->publicUrl();
     }
 }

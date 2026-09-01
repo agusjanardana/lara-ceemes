@@ -20,7 +20,7 @@ final class UpdateNavigationItem extends Action
     {
         $type = is_string($data['type'] ?? null) ? $data['type'] : $item->type;
         $targetRules = match ($type) {
-            'entry' => ['sometimes', 'required', 'uuid', Rule::exists('ceemes_entries', 'uuid')],
+            'content' => ['sometimes', 'required', 'uuid', Rule::exists('ceemes_contents', 'uuid')],
             'url' => ['sometimes', 'required', 'url'],
             default => ['sometimes', 'required', 'string', 'max:255'],
         };
@@ -31,7 +31,7 @@ final class UpdateNavigationItem extends Action
                 Rule::exists('ceemes_navigation_items', 'uuid')->where('navigation_uuid', $item->navigation_uuid),
             ],
             'label' => ['sometimes', 'required', 'string', 'max:255'],
-            'type' => ['sometimes', 'required', Rule::in(['entry', 'url', 'route'])],
+            'type' => ['sometimes', 'required', Rule::in(['content', 'url', 'route'])],
             'target' => $targetRules,
             'data' => ['nullable', 'array'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],

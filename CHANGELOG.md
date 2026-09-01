@@ -6,17 +6,25 @@ All notable changes to Lara Ceemes are documented in this file.
 
 ### Added
 
+- New Set and Content terminology with direct Set Fields; every Set
+  owns one internal schema for optional Fixed Fields.
+- Global reusable Section Library and ordered many-to-many Content placements,
+  including attach/detach usage workflows and cross-Content usage visibility.
+- Canonical Set, Content, Section, Category Group, and Category domain with
+  `content` and `category` field handles.
+- `ceemes:make-set`, `ceemes:make-set-field`, and `ceemes:make-content` commands.
+
 - Laravel 13 package foundation with auto-discovery and UUID-only CMS schema.
 - Configurable authenticated Admin CMS protected by the `access-ceemes` Gate.
-- Collections, Blueprints, extensible Fields, Entries, and status-only publishing.
+- Sets, extensible Fields, Contents, and status-only publishing.
 - Structured Section Types, Section Fields, Section instances, duplication,
   enable/disable, deterministic lookup, and reordering.
-- Hierarchical Taxonomies/Terms and field-scoped Entry-Term relations.
+- Hierarchical Category Groups/Categories and field-scoped Content-Category relations.
 - Hierarchical Navigations and configurable Settings with cache invalidation.
-- Per-Entry SEO with global Settings fallback.
+- Per-Content SEO with global Settings fallback.
 - Filesystem Media Library with metadata, search, usage discovery, and protected
   deletion while content references remain.
-- Public Collection, Entry, Taxonomy, Navigation, Settings, Media, and SEO Facades.
+- Public Set, Content, CategoryGroup, Navigation, Settings, Media, and SEO Facades.
 - Shared Actions for Admin and Artisan, domain events, and cache management.
 - Installer, status, cache, content-creation, and setting Artisan commands.
 - Compiled Admin CSS requiring no frontend build in consuming applications.
@@ -24,21 +32,21 @@ All notable changes to Lara Ceemes are documented in this file.
 - Superadmin registry and `ceemes:make-superadmin` Artisan command.
 - Configurable Lara Ceemes landing page for the public `/` route.
 - Responsive Admin shell with searchable CRUD tables, filters, confirmation
-  dialogs, collection shortcuts, and mobile navigation.
-- Blueprint-aware Entry editor, per-Entry SEO panel, Section editor, Media grid,
+  dialogs, set shortcuts, and mobile navigation.
+- Content editor, per-Content SEO panel, Section editor, Media grid,
   and parent/child Navigation presentation.
-- Guided Collection-to-Blueprint setup, dedicated Blueprint Field management,
+- Guided Set setup, dedicated Set Field management,
   automatic handles, and human-friendly common field configuration.
 - Corrected nested search input focus and browser-clear styling in the Admin UI.
-- Blueprint-controlled Sections areas with explicit allowed Section Types,
-  per-field builders, and hidden Section UI for fixed-field-only Blueprints.
-- Published-only public Entry routing with editable globally unique URIs,
+- Set-controlled Sections areas with explicit allowed Section Types and
+  per-field builders.
+- Published-only public Content routing with editable globally unique URIs,
   homepage support, nested paths, reserved Admin protection, and Blade template
   overrides.
-- Searchable modal pickers for Blueprint Field Types and Entry relations,
-  Collection-scoped Entry fields, and working single/multiple relation values.
+- Searchable modal pickers for Set Field Types and Content relations,
+  Set-scoped Content fields, and working single/multiple relation values.
 - Visual Repeater schema builder with searchable subfield types, row limits,
-  nested validation, and add/remove/reorder controls in the Entry editor.
+  nested validation, and add/remove/reorder controls in the Content editor.
 - Redesigned package login and public landing pages.
 - PHPUnit, Testbench, Pint, PHPStan level 8, CI, and Laravel playground coverage.
 

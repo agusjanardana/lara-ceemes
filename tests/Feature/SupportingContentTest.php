@@ -6,68 +6,67 @@ namespace LaraCeemes\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-use LaraCeemes\Actions\Blueprints\CreateBlueprint;
-use LaraCeemes\Actions\Blueprints\CreateBlueprintField;
-use LaraCeemes\Actions\Collections\CreateCollection;
-use LaraCeemes\Actions\Entries\CreateEntry;
+use LaraCeemes\Actions\Categories\AttachCategories;
+use LaraCeemes\Actions\Categories\CreateCategory;
+use LaraCeemes\Actions\Categories\CreateCategoryGroup;
+use LaraCeemes\Actions\Contents\CreateContent;
 use LaraCeemes\Actions\Navigations\CreateNavigation;
 use LaraCeemes\Actions\Navigations\CreateNavigationItem;
 use LaraCeemes\Actions\Navigations\ReorderNavigationItems;
+use LaraCeemes\Actions\Sets\CreateSet;
+use LaraCeemes\Actions\Sets\CreateSetField;
 use LaraCeemes\Actions\Settings\SetSetting;
-use LaraCeemes\Actions\Taxonomies\AttachTerms;
-use LaraCeemes\Actions\Taxonomies\CreateTaxonomy;
-use LaraCeemes\Actions\Taxonomies\CreateTerm;
 use LaraCeemes\Events\SettingUpdated;
+use LaraCeemes\Facades\Category as CategoryFacade;
 use LaraCeemes\Facades\Navigation as NavigationFacade;
 use LaraCeemes\Facades\Seo;
 use LaraCeemes\Facades\Settings;
-use LaraCeemes\Facades\Taxonomy as TaxonomyFacade;
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Content;
 use LaraCeemes\Tests\TestCase;
 
 final class SupportingContentTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_taxonomy_terms_are_hierarchical_and_available_through_facade(): void
+    public function test_categories_are_hierarchical_and_available_through_facade(): void
     {
-        $taxonomy = $this->app->make(CreateTaxonomy::class)->execute(['name' => 'Categories']);
-        $technology = $this->app->make(CreateTerm::class)->execute($taxonomy, ['name' => 'Technology']);
-        $laravel = $this->app->make(CreateTerm::class)->execute($taxonomy, [
+        $categoryGroup = $this->app->make(CreateCategoryGroup::class)->execute(['name' => 'Categories']);
+        $technology = $this->app->make(CreateCategory::class)->execute($categoryGroup, ['name' => 'Technology']);
+        $laravel = $this->app->make(CreateCategory::class)->execute($categoryGroup, [
             'name' => 'Laravel',
             'parent_uuid' => $technology->uuid,
         ]);
 
-        self::assertSame('categories', TaxonomyFacade::get('categories')->handle);
-        self::assertCount(2, TaxonomyFacade::terms('categories'));
+        self::assertSame('categories', CategoryFacade::get('categories')->handle);
+        self::assertCount(2, CategoryFacade::categories('categories'));
         self::assertSame($technology->uuid, $laravel->parent->uuid);
-        self::assertSame($laravel->uuid, TaxonomyFacade::term('categories', 'laravel')?->uuid);
+        self::assertSame($laravel->uuid, CategoryFacade::category('categories', 'laravel')?->uuid);
     }
 
-    public function test_taxonomy_relations_are_scoped_by_field_handle(): void
+    public function test_category_relations_are_scoped_by_field_handle(): void
     {
-        $entry = $this->makeEntry();
-        $taxonomy = $this->app->make(CreateTaxonomy::class)->execute(['name' => 'Categories']);
-        $news = $this->app->make(CreateTerm::class)->execute($taxonomy, ['name' => 'News']);
-        $featured = $this->app->make(CreateTerm::class)->execute($taxonomy, ['name' => 'Featured']);
-        $createField = $this->app->make(CreateBlueprintField::class);
+        $content = $this->makeContent();
+        $categoryGroup = $this->app->make(CreateCategoryGroup::class)->execute(['name' => 'Categories']);
+        $news = $this->app->make(CreateCategory::class)->execute($categoryGroup, ['name' => 'News']);
+        $featured = $this->app->make(CreateCategory::class)->execute($categoryGroup, ['name' => 'Featured']);
+        $createField = $this->app->make(CreateSetField::class);
 
         foreach (['categories', 'secondary_categories'] as $handle) {
-            $createField->execute($entry->blueprint, [
+            $createField->execute($content->set, [
                 'handle' => $handle,
                 'label' => $handle,
-                'type' => 'taxonomy',
-                'config' => ['taxonomy' => 'categories'],
+                'type' => 'category',
+                'config' => ['category_group' => 'categories'],
             ]);
         }
 
-        $attach = $this->app->make(AttachTerms::class);
-        $attach->execute($entry, 'categories', [$news->uuid]);
-        $attach->execute($entry, 'secondary_categories', [$featured->uuid]);
-        $attach->execute($entry, 'categories', [$featured->uuid]);
+        $attach = $this->app->make(AttachCategories::class);
+        $attach->execute($content, 'categories', [$news->uuid]);
+        $attach->execute($content, 'secondary_categories', [$featured->uuid]);
+        $attach->execute($content, 'categories', [$featured->uuid]);
 
-        self::assertSame([$featured->uuid], $entry->terms('categories')->pluck('uuid')->all());
-        self::assertSame([$featured->uuid], $entry->terms('secondary_categories')->pluck('uuid')->all());
+        self::assertSame([$featured->uuid], $content->categories('categories')->pluck('uuid')->all());
+        self::assertSame([$featured->uuid], $content->categories('secondary_categories')->pluck('uuid')->all());
     }
 
     public function test_navigation_supports_nested_items_and_reordering(): void
@@ -120,7 +119,7 @@ final class SupportingContentTest extends TestCase
         Event::assertDispatched(SettingUpdated::class);
     }
 
-    public function test_entry_seo_overrides_global_seo_and_missing_values_fall_back(): void
+    public function test_content_seo_overrides_global_seo_and_missing_values_fall_back(): void
     {
         Settings::set('seo.site_title', 'Company');
         Settings::set('seo.default_meta_title', 'Default Title');
@@ -128,13 +127,13 @@ final class SupportingContentTest extends TestCase
         Settings::set('seo.title_separator', '-');
         Settings::set('seo.default_robots_index', true);
 
-        $entry = $this->makeEntry([
+        $content = $this->makeContent([
             'seo' => [
                 'title' => 'Home SEO',
                 'robots_index' => false,
             ],
         ]);
-        $seo = Seo::forEntry($entry);
+        $seo = Seo::forContent($content);
 
         self::assertSame('Home SEO', $seo->title);
         self::assertSame('Default Description', $seo->description);
@@ -143,15 +142,14 @@ final class SupportingContentTest extends TestCase
         self::assertSame('-', $seo->titleSeparator);
     }
 
-    /** @param array<string, mixed> $entryData */
-    private function makeEntry(array $entryData = []): Entry
+    /** @param array<string, mixed> $contentData */
+    private function makeContent(array $contentData = []): Content
     {
-        $collection = $this->app->make(CreateCollection::class)->execute(['name' => 'Pages']);
-        $blueprint = $this->app->make(CreateBlueprint::class)->execute($collection, ['name' => 'Page']);
+        $set = $this->app->make(CreateSet::class)->execute(['name' => 'Pages']);
 
-        return $this->app->make(CreateEntry::class)->execute($blueprint, [
+        return $this->app->make(CreateContent::class)->execute($set, [
             'title' => 'Home',
-            ...$entryData,
+            ...$contentData,
         ]);
     }
 }

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace LaraCeemes\Support;
 
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Content;
 use LaraCeemes\Models\NavigationItem;
 use LaraCeemes\Models\Section;
 use LaraCeemes\Models\Setting;
@@ -15,7 +15,7 @@ final class MediaUsageDetector
     public function forUuid(string $mediaUuid): array
     {
         return [
-            ...$this->entryUsages($mediaUuid),
+            ...$this->contentUsages($mediaUuid),
             ...$this->sectionUsages($mediaUuid),
             ...$this->settingUsages($mediaUuid),
             ...$this->navigationUsages($mediaUuid),
@@ -23,27 +23,27 @@ final class MediaUsageDetector
     }
 
     /** @return array<int, MediaUsage> */
-    private function entryUsages(string $mediaUuid): array
+    private function contentUsages(string $mediaUuid): array
     {
         $usages = [];
 
-        foreach (Entry::query()->with('collection')->get() as $entry) {
-            foreach ($entry->data() as $fieldHandle => $value) {
+        foreach (Content::query()->with('set')->get() as $content) {
+            foreach ($content->data() as $fieldHandle => $value) {
                 if ($this->contains($value, $mediaUuid)) {
                     $usages[] = new MediaUsage(
-                        'entry',
-                        $entry->uuid,
-                        "{$entry->collection->name} / {$entry->title}",
+                        'content',
+                        $content->uuid,
+                        "{$content->set->name} / {$content->title}",
                         (string) $fieldHandle,
                     );
                 }
             }
 
-            if ($this->contains($entry->seo(), $mediaUuid)) {
+            if ($this->contains($content->seo(), $mediaUuid)) {
                 $usages[] = new MediaUsage(
-                    'entry_seo',
-                    $entry->uuid,
-                    "{$entry->collection->name} / {$entry->title} / SEO",
+                    'content_seo',
+                    $content->uuid,
+                    "{$content->set->name} / {$content->title} / SEO",
                     'seo',
                 );
             }
@@ -57,13 +57,13 @@ final class MediaUsageDetector
     {
         $usages = [];
 
-        foreach (Section::query()->with(['entry.collection', 'sectionType'])->get() as $section) {
+        foreach (Section::query()->with(['contents.set', 'sectionType'])->get() as $section) {
             foreach ($section->data() as $fieldHandle => $value) {
                 if ($this->contains($value, $mediaUuid)) {
                     $usages[] = new MediaUsage(
                         'section',
                         $section->uuid,
-                        "{$section->entry->collection->name} / {$section->entry->title} / {$section->sectionType->name}",
+                        ($section->name ?: $section->handle)." / {$section->sectionType->name} / used by {$section->contents->count()} content(s)",
                         (string) $fieldHandle,
                     );
                 }

@@ -1,13 +1,13 @@
 # Lara Ceemes
 
 Lara Ceemes is a lightweight, database-driven CMS package for Laravel 13. It
-provides dynamic Collections, Blueprints, Entries, structured Sections,
-Taxonomies, Navigations, Settings, SEO, Media, an authenticated Admin CMS,
+provides dynamic Sets, Contents, reusable structured Sections, Categories,
+Navigations, Settings, SEO, Media, an authenticated Admin CMS,
 Artisan commands, and a public Facade API.
 
 The consuming Laravel application keeps control of explicit frontend routes,
 Blade templates, CSS, and page design. Lara Ceemes can automatically resolve
-published Entry URLs for content-managed pages.
+published Content URLs for content-managed pages.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ php artisan ceemes:make-superadmin
 ```
 
 The installer publishes configuration and compiled Admin assets, runs
-migrations, creates the default Pages Collection, Header/Footer Navigations,
+migrations, creates the default Pages Set, Header/Footer Navigations,
 and minimum General/SEO/Cache/Media settings. It is safe to run more than once.
 
 The superadmin command uses the consuming application's configured User model.
@@ -36,8 +36,8 @@ The package provides `/admin/login`, while the Admin CMS defaults to `/admin`
 and uses the consuming application's `web` and `auth` middleware. It also
 replaces Laravel's default `/` page with a small Lara Ceemes landing page.
 
-The Admin CMS includes searchable CRUD tables, Entry status and Blueprint
-filters, Blueprint-aware content inputs, per-Entry SEO, a Media Library, and
+The Admin CMS includes searchable CRUD tables, Content status filters, Set
+Fields, per-Content SEO, a reusable Section Library, a Media Library, and
 hierarchical Navigation using parent items. Its compiled CSS and JavaScript are
 published by the installer, so the consuming application does not need a Node
 build step.
@@ -58,7 +58,7 @@ own its public `/` route while keeping other CMS URLs active. Set
 already provides its own named `login` route and authentication screens.
 
 Set `CEEMES_PUBLIC_ROUTING=false` if the consuming application wants to resolve
-every public Entry through its own controllers. Explicit application routes are
+every public Content through its own controllers. Explicit application routes are
 registered before the CMS catch-all route and therefore keep priority.
 
 ## Authorization
@@ -80,9 +80,9 @@ Lara Ceemes does not create a separate user or authentication system.
 ## Content API
 
 ```php
-use LaraCeemes\Facades\Collection;
+use LaraCeemes\Facades\Set;
 
-$home = Collection::query('pages')
+$home = Set::query('pages')
     ->published()
     ->whereSlug('home')
     ->firstOrFail();
@@ -95,45 +95,43 @@ $banner = $home->section('banner');
 Other public APIs:
 
 ```php
-use LaraCeemes\Facades\Entry;
+use LaraCeemes\Facades\Content;
+use LaraCeemes\Facades\Category;
 use LaraCeemes\Facades\Media;
 use LaraCeemes\Facades\Navigation;
 use LaraCeemes\Facades\Seo;
 use LaraCeemes\Facades\Settings;
-use LaraCeemes\Facades\Taxonomy;
+use LaraCeemes\Facades\Section;
 
-$entry = Entry::find('pages', 'home');
+$content = Content::find('pages', 'home');
+$sharedSections = Section::forContent($content)->enabled()->get();
 $header = Navigation::get('header');
-$categories = Taxonomy::terms('categories');
+$categories = Category::categories('categories');
 $siteName = Settings::get('general.site_name', 'My Website');
 $image = Media::find($mediaUuid);
-$seo = Seo::forEntry($entry);
+$seo = Seo::forContent($content);
 ```
 
-All CMS entities use UUID primary keys. Entry visibility is controlled only by
+All CMS entities use UUID primary keys. Content visibility is controlled only by
 `draft` or `published` status in v0.1.
 
-## Blueprint Fields and Section Types
+## Set Fields and Reusable Sections
 
-A Blueprint defines the complete editing model of an Entry. Use ordinary
-Blueprint Fields for predictable values that every Entry should expose, such as
-headline, excerpt, date, category, or featured image.
+A Set owns optional Fixed Fields directly. Fixed Fields suit predictable values such as SKU, price, excerpt,
+date, category, or featured image.
 
-A Section Type defines one reusable content block, such as Hero, FAQ, Gallery,
-or CTA. To use Section Types in an Entry, add a Blueprint Field with the
-`sections` type and select which Section Types are allowed in that field. A
-Blueprint may combine ordinary fields and one or more Sections areas. The Entry
-editor only shows a Sections builder for areas declared by its Blueprint.
+A Section Type defines the fields for a block such as Hero, FAQ, Gallery, or
+CTA. A Section is the actual reusable content. Content attaches Sections through
+ordered placements, so the same shared Hero can appear on Home and Contact.
+Editing it updates every usage; detaching it only removes that placement.
 
-An `entry` field is scoped to one source Collection. Its editor uses a searchable
-picker instead of a long select and supports either one Entry or multiple Entries
-through the field's `multiple` option. Stored UUIDs are validated against the
-configured Collection.
+A `content` field is scoped to one source Set. Its searchable picker supports
+one or multiple Content values.
 
-A `repeater` repeats one consistent group of subfields. In the Blueprint Field
+A `repeater` repeats one consistent group of subfields. In the Set Field
 form, choose Repeater and build one item from searchable subfield types, for
 example `image + title + description`. You may set required subfields, widths,
-and minimum/maximum item counts. The Entry editor renders each item as a normal
+and minimum/maximum item counts. The Content editor renders each item as a normal
 field card with add, remove, move-up, and move-down actions; editors never need
 to write JSON.
 
@@ -142,20 +140,36 @@ example Hero followed by Gallery, FAQ, and CTA. In short: Repeater is many rows
 of the same schema; Sections is an ordered page builder of different reusable
 Section Types.
 
-## Public Entry Routing
+## Public Content Routing
 
-Every Entry has a globally unique Public URL. Set a published Homepage Entry to
+Every Content has a globally unique Public URL. Set a published Homepage Content to
 `/`, Contact to `/contact`, or use nested paths such as `/company/team`. Draft
-Entries and Entries in non-publishable Collections return 404.
+Contents in non-publishable Sets return 404.
 
-The default Pages Collection uses `/{slug}` to suggest the initial URL, so an
-Entry with slug `contact` starts as `/contact`. The URL remains editable and is
-independent from the slug. Reserved Admin paths cannot be assigned to Entries.
+The default Pages Set uses `/{slug}` to suggest the initial URL, so Content with
+slug `contact` starts as `/contact`. Reserved Admin paths cannot be assigned.
 
-When the Collection's `template` points to an existing Blade view, Lara Ceemes
-renders that view with `$entry` and `$seo`. Otherwise it uses its minimal built-in
-content view. An application can create `resources/views/pages/show.blade.php`
-and set the Collection template to `pages.show`.
+### Automatic Set Views
+
+New Sets use automatic frontend conventions by default:
+
+```text
+Pages    -> resources/views/pages.blade.php       -> view: pages
+Products -> resources/views/products/show.blade.php -> view: products.show
+```
+
+Pages use `/{slug}`. Other Sets use `/{set-handle}/{slug}`, so a published
+Product with slug `red-shoes` resolves at `/products/red-shoes`. Generated Blade
+files receive `$content`, `$set`, `$fields`, `$sections`, and `$seo`, loop Fixed
+Fields and Section areas, and are never overwritten after creation.
+
+The Set form also supports a custom Blade view or `Tanpa frontend (data only)`.
+Data-only Sets store structured Content but are made non-publishable and receive
+no route or generated Blade file.
+
+When the Set's `template` points to an existing Blade view, Lara Ceemes renders
+that view with `$content` and `$seo`. An application can create `resources/views/pages/show.blade.php`
+and set the Set template to `pages.show`.
 
 ## Artisan Commands
 
@@ -164,14 +178,13 @@ ceemes:install
 ceemes:status
 ceemes:cache:clear
 ceemes:make-superadmin
-ceemes:make-collection
-ceemes:make-blueprint
-ceemes:make-field
-ceemes:make-entry
-ceemes:make-section
+ceemes:make-set
+ceemes:make-set-field
+ceemes:make-content
+ceemes:make-section-type
 ceemes:make-section-field
-ceemes:make-taxonomy
-ceemes:make-term
+ceemes:make-category-group
+ceemes:make-category
 ceemes:make-navigation
 ceemes:setting:get
 ceemes:setting:set
@@ -180,11 +193,16 @@ ceemes:setting:set
 Example:
 
 ```bash
-php artisan ceemes:make-collection articles --name="Articles"
-php artisan ceemes:make-blueprint article --collection=articles
-php artisan ceemes:make-field headline --blueprint=article --type=text
-php artisan ceemes:make-entry --collection=articles --blueprint=article --title="First Article" --status=published
+php artisan ceemes:make-set articles --name="Articles"
+php artisan ceemes:make-set-field excerpt --set=articles --type=textarea
+php artisan ceemes:make-content --set=articles --title="First Article" --status=published
+php artisan ceemes:make-set products
+php artisan ceemes:make-set inventory --no-template
+php artisan ceemes:make-set products --template=store.products.show
 ```
+
+The older Set and Content commands remain as storage-oriented aliases.
+Content schemas are not exposed as a separate model or command.
 
 For JSON options in PowerShell, pass arguments through a PowerShell array or use
 the Admin CMS to avoid native-shell quote conversion.
@@ -222,7 +240,7 @@ composer validate --strict
 
 The package test suite uses Orchestra Testbench. The included playground also
 contains an integration test covering auto-discovery, Actions, migrations, and
-the public Collection Facade.
+the public Set Facade.
 
 ## Documentation
 

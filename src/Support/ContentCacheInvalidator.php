@@ -4,32 +4,32 @@ declare(strict_types=1);
 
 namespace LaraCeemes\Support;
 
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Content;
 
 final class ContentCacheInvalidator
 {
     public function __construct(private readonly CeemesCache $cache) {}
 
-    public function collection(string $handle): void
+    public function set(string $handle): void
     {
-        $this->cache->forget("collection:{$handle}");
-        $this->cache->forget('collections');
+        $this->cache->forget("set:{$handle}");
+        $this->cache->forget('sets');
     }
 
-    public function entry(Entry $entry, ?string $previousSlug = null): void
+    public function content(Content $content, ?string $previousSlug = null): void
     {
-        $collectionHandle = $entry->collection()->value('handle');
+        $setHandle = $content->set()->value('handle');
 
-        if (! is_string($collectionHandle)) {
+        if (! is_string($setHandle)) {
             return;
         }
 
-        $this->cache->forget("entry:{$collectionHandle}:{$entry->slug}");
+        $this->cache->forget("content:{$setHandle}:{$content->slug}");
 
-        if ($previousSlug !== null && $previousSlug !== $entry->slug) {
-            $this->cache->forget("entry:{$collectionHandle}:{$previousSlug}");
+        if ($previousSlug !== null && $previousSlug !== $content->slug) {
+            $this->cache->forget("content:{$setHandle}:{$previousSlug}");
         }
 
-        $this->collection($collectionHandle);
+        $this->set($setHandle);
     }
 }

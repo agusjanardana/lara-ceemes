@@ -24,7 +24,7 @@ final class NavigationItemController extends AdminController
         )->all();
         $fields = [
             ['name' => 'label', 'label' => 'Label'],
-            ['name' => 'type', 'label' => 'Type', 'type' => 'select', 'options' => ['url' => 'URL', 'route' => 'Named route', 'entry' => 'Entry UUID']],
+            ['name' => 'type', 'label' => 'Type', 'type' => 'select', 'options' => ['url' => 'URL', 'route' => 'Named route', 'content' => 'Content UUID']],
             ['name' => 'target', 'label' => 'Target'],
             ['name' => 'parent_uuid', 'label' => 'Parent', 'type' => 'select', 'options' => $options],
             ['name' => 'data', 'label' => 'Data JSON', 'type' => 'textarea', 'default' => '{}'],

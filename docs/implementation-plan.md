@@ -36,45 +36,44 @@ Status: Complete.
 Exit criterion: field types can be registered, validated, stored, and resolved
 without switch statements or HTTP/CLI-specific logic.
 
-## 3. Collections, Blueprints, and Entries
+## 3. Sets, Set Fields, and Contents
 
 Status: Complete.
 
-- Implement UUID models and migrations for Collections, Blueprints, Blueprint
-  Fields, and Entries.
+- Implement UUID models and migrations for Sets, Set Fields, and Content.
 - Enforce handle and slug uniqueness in their defined scopes.
-- Implement Entry data access, per-Entry SEO storage, draft/published behavior,
+- Implement Content data access, per-Content SEO storage, draft/published behavior,
   soft deletes, Actions, Managers, and domain events.
-- Implement `EntryQuery`, Collection/Entry Facades, and their cache behavior.
+- Implement `ContentQuery`, Set/Content Facades, and their cache behavior.
 - Add feature and unit tests for all public APIs and constraints.
 
 Exit criterion: a developer can define a content type and create/query draft or
-published Entries entirely through Actions and Facades.
+published Content entirely through Actions and Facades.
 
 ## 4. Structured Sections
 
 Status: Complete.
 
 - Implement Section Types, Section Fields, and Section instances with UUIDs.
-- Validate allowed Section Types per Blueprint sections field.
+- Validate allowed Section Types per Set sections field.
 - Implement create, edit, duplicate, enable, disable, delete, and reorder Actions.
 - Implement deterministic `section($identifier)`, `sections()`, and
   `sectionsOfType()` APIs.
 - Cover multiple section areas through `field_handle` and test ordering rules.
 
-Exit criterion: an Entry returns its enabled Sections in order and every Section
+Exit criterion: an Content returns its enabled Sections in order and every Section
 operation works through the shared application layer.
 
-## 5. Taxonomies, Navigations, Settings, SEO, and Cache
+## 5. Categories, Navigations, Settings, SEO, and Cache
 
 Status: Complete.
 
-- Implement hierarchical Taxonomies and Terms with a `field_handle` on Entry-Term
+- Implement hierarchical Category Groups and Categories with a `field_handle` on Content-Category
   relations.
-- Implement hierarchical Navigation Items for entry, URL, and named-route targets.
+- Implement hierarchical Navigation Items for content, URL, and named-route targets.
 - Implement typed Settings, autoloading, cache invalidation, and setting groups.
-- Implement `SeoManager` resolution from Entry SEO to global SEO settings.
-- Complete Taxonomy, Navigation, Settings, and SEO Facades and tests.
+- Implement `SeoManager` resolution from Content SEO to global SEO settings.
+- Complete CategoryGroup, Navigation, Settings, and SEO Facades and tests.
 
 Exit criterion: all four domains are manageable through Actions and readable
 through their documented Facades with correct caching.
@@ -86,7 +85,7 @@ Status: Complete.
 - Implement UUID Media records, configurable filesystem disks, uploads, metadata,
   MIME validation, search, preview, URLs, and soft deletes.
 - Implement media-aware field resolution.
-- Build usage discovery across Entries, Entry SEO, Sections, Settings, and other
+- Build usage discovery across Content, Content SEO, Sections, Settings, and other
   registered media fields.
 - Block deletion while references exist and return structured usage details for
   the Admin popup.
@@ -106,7 +105,7 @@ Status: Core complete; final Admin UX pending.
 - Distribute compiled Admin assets so consuming projects need no frontend build.
 
 The underlying Section reorder and Media usage Actions are complete. The current
-Admin exposes functional CRUD with JSON textareas for dynamic Entry/Section data;
+Admin exposes functional CRUD with JSON textareas for dynamic Content/Section data;
 field-aware widgets, a Media picker, visual Section reorder controls, and a modal
 usage presentation remain before this phase fully meets its UX acceptance scope.
 

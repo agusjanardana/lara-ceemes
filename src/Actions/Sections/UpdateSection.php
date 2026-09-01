@@ -23,17 +23,9 @@ final class UpdateSection extends Action
     public function execute(Section $section, array $data): Section
     {
         $validated = Validator::make($data, [
-            'key' => [
-                'nullable',
-                'alpha_dash:ascii',
-                'max:255',
-                Rule::unique('ceemes_sections', 'key')
-                    ->where('entry_uuid', $section->entry_uuid)
-                    ->where('field_handle', $section->field_handle)
-                    ->ignore($section->uuid, 'uuid'),
-            ],
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'handle' => ['sometimes', 'required', 'alpha_dash:ascii', 'max:255', Rule::unique('ceemes_sections', 'handle')->ignore($section->uuid, 'uuid')],
             'data' => ['sometimes', 'array'],
-            'is_enabled' => ['sometimes', 'boolean'],
         ])->validate();
 
         if (array_key_exists('data', $validated)) {
@@ -46,7 +38,9 @@ final class UpdateSection extends Action
         return $this->transaction(function () use ($section, $validated): Section {
             $section->update($validated);
             $section->refresh();
-            $this->cache->entry($section->entry);
+            foreach ($section->contents()->get() as $content) {
+                $this->cache->content($content);
+            }
             event(new SectionUpdated($section));
 
             return $section;

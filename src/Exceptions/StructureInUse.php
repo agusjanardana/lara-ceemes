@@ -8,13 +8,13 @@ use RuntimeException;
 
 final class StructureInUse extends RuntimeException
 {
-    public static function collection(string $handle): self
+    public static function set(string $handle): self
     {
-        return new self("Collection [{$handle}] cannot be deleted while it contains Blueprints or Entries.");
+        return new self("Set [{$handle}] cannot be deleted while it contains Content.");
     }
 
-    public static function blueprint(string $handle): self
+    public static function section(string $handle): self
     {
-        return new self("Blueprint [{$handle}] cannot be deleted while it contains Entries.");
+        return new self("Section [{$handle}] cannot be deleted while it is attached to Content.");
     }
 }

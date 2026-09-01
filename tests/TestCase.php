@@ -33,6 +33,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('ceemes.users.key', 'id');
         $app['config']->set('ceemes.users.key_type', 'integer');
         $app['config']->set('ceemes.users.foreign_keys', true);
+        $app['config']->set('ceemes.views.auto_scaffold', false);
         $app['config']->set('auth.providers.users.model', User::class);
     }
 

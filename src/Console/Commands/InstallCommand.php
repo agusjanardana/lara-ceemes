@@ -6,12 +6,13 @@ namespace LaraCeemes\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Storage;
-use LaraCeemes\Actions\Collections\CreateCollection;
 use LaraCeemes\Actions\Navigations\CreateNavigation;
+use LaraCeemes\Actions\Sets\CreateSet;
 use LaraCeemes\Actions\Settings\SetSetting;
-use LaraCeemes\Models\Collection;
 use LaraCeemes\Models\Navigation;
+use LaraCeemes\Models\Set;
 use LaraCeemes\Models\Setting;
+use LaraCeemes\Support\SetViewScaffolder;
 
 final class InstallCommand extends Command
 {
@@ -20,9 +21,10 @@ final class InstallCommand extends Command
     protected $description = 'Install Lara Ceemes and create its minimum default data';
 
     public function handle(
-        CreateCollection $createCollection,
+        CreateSet $createSet,
         CreateNavigation $createNavigation,
         SetSetting $setSetting,
+        SetViewScaffolder $views,
     ): int {
         $this->components->info('Installing Lara Ceemes');
 
@@ -39,13 +41,15 @@ final class InstallCommand extends Command
         ]);
         $this->call('migrate', ['--force' => true]);
 
-        if (! Collection::query()->where('handle', 'pages')->exists()) {
-            $createCollection->execute(['name' => 'Pages', 'handle' => 'pages', 'route' => '/{slug}']);
+        if (! Set::query()->where('handle', 'pages')->exists()) {
+            $pages = $createSet->execute(['name' => 'Pages', 'handle' => 'pages']);
         } else {
-            Collection::query()
-                ->where('handle', 'pages')
-                ->whereNull('route')
-                ->update(['route' => '/{slug}']);
+            $pages = Set::query()->where('handle', 'pages')->sole();
+            $pages->update([
+                'route' => $pages->route ?: $views->routePattern('pages'),
+                'template' => $pages->template ?: $views->viewName('pages'),
+            ]);
+            $views->scaffold($pages->refresh());
         }
 
         foreach (['Header', 'Footer'] as $name) {

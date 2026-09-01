@@ -23,16 +23,17 @@
         <div class="ceemes-sidebar-scroll">
             <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.dashboard') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.dashboard') }}"><span class="ceemes-nav-icon">⌂</span>Dashboard</a>
             <div class="ceemes-nav-label">Content</div>
-            <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.collections.*', 'ceemes.admin.blueprints.*', 'ceemes.admin.fields.*', 'ceemes.admin.entries.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.collections.index') }}"><span class="ceemes-nav-icon">▤</span>Collections</a>
-            @if($sidebarCollections->isNotEmpty())
+            <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.sets.*', 'ceemes.admin.set-fields.*', 'ceemes.admin.contents.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.sets.index') }}"><span class="ceemes-nav-icon">▤</span>Sets</a>
+            @if($sidebarSets->isNotEmpty())
                 <div class="ceemes-nav-children">
-                    @foreach($sidebarCollections as $sidebarCollection)
-                        <div class="ceemes-collection-nav"><a class="{{ request()->routeIs('ceemes.admin.entries.*') && request()->route('collection')?->is($sidebarCollection) ? 'is-active' : '' }}" href="{{ route('ceemes.admin.entries.index', $sidebarCollection) }}">{{ $sidebarCollection->name }}</a><a class="ceemes-collection-config" href="{{ route('ceemes.admin.blueprints.index', $sidebarCollection) }}" title="Kelola Blueprint {{ $sidebarCollection->name }}">BP</a></div>
+                    @foreach($sidebarSets as $sidebarSet)
+                        <div class="ceemes-set-nav"><a class="{{ request()->routeIs('ceemes.admin.contents.*') && request()->route('set')?->is($sidebarSet) ? 'is-active' : '' }}" href="{{ route('ceemes.admin.contents.index', $sidebarSet) }}">{{ $sidebarSet->name }}</a></div>
                     @endforeach
                 </div>
             @endif
+            <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.sections.*', 'ceemes.admin.section-placements.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.sections.index') }}"><span class="ceemes-nav-icon">◫</span>Sections</a>
             <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.navigations.*', 'ceemes.admin.navigation-items.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.navigations.index') }}"><span class="ceemes-nav-icon">⑂</span>Navigation</a>
-            <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.taxonomies.*', 'ceemes.admin.terms.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.taxonomies.index') }}"><span class="ceemes-nav-icon">◇</span>Taxonomies</a>
+            <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.category-groups.*', 'ceemes.admin.categories.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.category-groups.index') }}"><span class="ceemes-nav-icon">◇</span>Categories</a>
             <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.media.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.media.index') }}"><span class="ceemes-nav-icon">▧</span>Media</a>
             <div class="ceemes-nav-label">Fields</div>
             <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.section-types.*', 'ceemes.admin.section-fields.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.section-types.index') }}"><span class="ceemes-nav-icon">⊞</span>Section Types</a>

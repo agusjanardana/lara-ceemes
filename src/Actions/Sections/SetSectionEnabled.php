@@ -16,9 +16,11 @@ final class SetSectionEnabled extends Action
     public function execute(Section $section, bool $enabled): Section
     {
         return $this->transaction(function () use ($section, $enabled): Section {
-            $section->update(['is_enabled' => $enabled]);
+            foreach ($section->contents()->get() as $content) {
+                $section->contents()->updateExistingPivot($content->uuid, ['is_enabled' => $enabled]);
+                $this->cache->content($content);
+            }
             $section->refresh();
-            $this->cache->entry($section->entry);
             event(new SectionUpdated($section));
 
             return $section;

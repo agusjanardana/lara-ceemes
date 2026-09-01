@@ -28,8 +28,8 @@ final class FieldRegistryTest extends TestCase
             'url',
             'color',
             'media',
-            'taxonomy',
-            'entry',
+            'category',
+            'content',
             'group',
             'repeater',
             'sections',
@@ -66,7 +66,7 @@ final class FieldRegistryTest extends TestCase
         self::assertTrue($registry->get('boolean')->serialize('1'));
         self::assertSame(
             ['cfbd89c0-e5df-4b64-acab-042622b25f78'],
-            $registry->get('taxonomy')->serialize([
+            $registry->get('category')->serialize([
                 'cfbd89c0-e5df-4b64-acab-042622b25f78',
                 'cfbd89c0-e5df-4b64-acab-042622b25f78',
             ]),

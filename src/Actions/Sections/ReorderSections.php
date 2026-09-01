@@ -7,7 +7,7 @@ namespace LaraCeemes\Actions\Sections;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use LaraCeemes\Actions\Action;
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Content;
 use LaraCeemes\Support\ContentCacheInvalidator;
 
 final class ReorderSections extends Action
@@ -15,7 +15,7 @@ final class ReorderSections extends Action
     public function __construct(private readonly ContentCacheInvalidator $cache) {}
 
     /** @param array<int, string> $sectionUuids */
-    public function execute(Entry $entry, array $sectionUuids, string $fieldHandle = 'sections'): void
+    public function execute(Content $content, array $sectionUuids, string $fieldHandle = 'sections'): void
     {
         Validator::make([
             'sections' => $sectionUuids,
@@ -26,9 +26,9 @@ final class ReorderSections extends Action
             'field_handle' => ['required', 'alpha_dash:ascii'],
         ])->validate();
 
-        $current = $entry->sectionItems()
-            ->where('field_handle', $fieldHandle)
-            ->pluck('uuid')
+        $current = $content->placedSections()
+            ->wherePivot('region', $fieldHandle)
+            ->pluck('ceemes_sections.uuid')
             ->all();
 
         if (array_diff($current, $sectionUuids) !== [] || array_diff($sectionUuids, $current) !== []) {
@@ -37,12 +37,12 @@ final class ReorderSections extends Action
             ]);
         }
 
-        $this->transaction(function () use ($entry, $sectionUuids): void {
+        $this->transaction(function () use ($content, $sectionUuids): void {
             foreach ($sectionUuids as $sortOrder => $uuid) {
-                $entry->sectionItems()->where('uuid', $uuid)->update(['sort_order' => $sortOrder]);
+                $content->placedSections()->updateExistingPivot($uuid, ['sort_order' => $sortOrder]);
             }
 
-            $this->cache->entry($entry);
+            $this->cache->content($content);
         });
     }
 }

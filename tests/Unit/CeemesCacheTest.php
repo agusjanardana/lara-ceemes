@@ -14,13 +14,13 @@ final class CeemesCacheTest extends TestCase
         $calls = 0;
         $cache = $this->app->make(CeemesCache::class);
 
-        $first = $cache->remember('collection:pages', function () use (&$calls): string {
+        $first = $cache->remember('set:pages', function () use (&$calls): string {
             $calls++;
 
             return 'Pages';
         });
 
-        $second = $cache->remember('collection:pages', function () use (&$calls): string {
+        $second = $cache->remember('set:pages', function () use (&$calls): string {
             $calls++;
 
             return 'Changed';
@@ -29,7 +29,7 @@ final class CeemesCacheTest extends TestCase
         self::assertSame('Pages', $first);
         self::assertSame('Pages', $second);
         self::assertSame(1, $calls);
-        self::assertSame('ceemes:collection:pages', $cache->key('collection:pages'));
+        self::assertSame('ceemes:set:pages', $cache->key('set:pages'));
     }
 
     public function test_disabled_cache_executes_the_callback_each_time(): void

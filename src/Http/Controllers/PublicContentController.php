@@ -7,9 +7,9 @@ namespace LaraCeemes\Http\Controllers;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Schema;
-use LaraCeemes\Enums\EntryStatus;
+use LaraCeemes\Enums\ContentStatus;
 use LaraCeemes\Managers\SeoManager;
-use LaraCeemes\Models\Entry;
+use LaraCeemes\Models\Content;
 
 final class PublicContentController
 {
@@ -17,7 +17,7 @@ final class PublicContentController
     {
         $uri = $ceemesPath === null || $ceemesPath === '' ? '/' : '/'.trim($ceemesPath, '/');
 
-        if (! Schema::hasTable('ceemes_entries') || ! Schema::hasColumn('ceemes_entries', 'uri')) {
+        if (! Schema::hasTable('ceemes_contents') || ! Schema::hasColumn('ceemes_contents', 'uri')) {
             if ($uri === '/' && (bool) config('ceemes.homepage.enabled', true)) {
                 return $views->make('ceemes::home');
             }
@@ -25,14 +25,14 @@ final class PublicContentController
             abort(404);
         }
 
-        $entry = Entry::query()
-            ->with(['collection', 'blueprint.fields'])
+        $content = Content::query()
+            ->with(['set.fields'])
             ->where('uri', $uri)
-            ->where('status', EntryStatus::Published->value)
-            ->whereHas('collection', fn ($query) => $query->where('is_publishable', true))
+            ->where('status', ContentStatus::Published->value)
+            ->whereHas('set', fn ($query) => $query->where('is_publishable', true))
             ->first();
 
-        if ($entry === null) {
+        if ($content === null) {
             if ($uri === '/' && (bool) config('ceemes.homepage.enabled', true)) {
                 return $views->make('ceemes::home');
             }
@@ -40,12 +40,18 @@ final class PublicContentController
             abort(404);
         }
 
-        $template = is_string($entry->collection->template) ? trim($entry->collection->template) : '';
-        $view = $template !== '' && $views->exists($template) ? $template : 'ceemes::content.entry';
+        $template = is_string($content->set->template) ? trim($content->set->template) : '';
+        $view = $template !== '' && $views->exists($template) ? $template : 'ceemes::content.show';
 
         return $views->make($view, [
-            'entry' => $entry,
-            'seo' => $seoManager->forEntry($entry),
+            'content' => $content,
+            'set' => $content->set,
+            'fields' => $content->set->fields,
+            'sections' => $content->placedSections()
+                ->wherePivot('is_enabled', true)
+                ->orderByPivot('sort_order')
+                ->get(),
+            'seo' => $seoManager->forContent($content),
         ]);
     }
 }

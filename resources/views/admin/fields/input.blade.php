@@ -5,7 +5,7 @@
     $inputId = ($inputPrefix ?? 'field').'-'.$field->handle;
     $required = ($config['required'] ?? false) === true;
     $multiple = ($config['multiple'] ?? false) === true
-        || ($type === 'taxonomy' && ($config['multiple'] ?? true) === true)
+        || ($type === 'category' && ($config['multiple'] ?? true) === true)
         || ($type === 'media' && (int) ($config['max_files'] ?? 1) !== 1);
     $selectedValues = is_array($value)
         ? array_map('strval', array_values(array_filter($value, 'is_scalar')))
@@ -13,7 +13,10 @@
 @endphp
 
 <div class="ceemes-field" style="grid-column: span {{ max(1, min(12, (int) ceil($field->width / 8.34))) }}">
-    <label for="{{ $inputId }}">{{ $field->label }} @if($required)<em>*</em>@endif</label>
+    <div class="ceemes-field-label-row">
+        <label for="{{ $inputId }}">{{ $field->label }} @if($required)<em>*</em>@endif</label>
+        @if(($editable ?? false) === true && isset($field->uuid))<button type="button" data-dialog-open="edit-fixed-field-{{ $field->uuid }}">Edit field</button>@endif
+    </div>
 
     @if(in_array($type, ['textarea', 'richtext'], true))
         @if($type === 'richtext')<div class="ceemes-editor-toolbar"><span>B</span><span><i>I</i></span><span>List</span><span>Link</span></div>@endif
@@ -25,12 +28,11 @@
         @php($options = is_array($config['options'] ?? null) ? $config['options'] : [])
         <select id="{{ $inputId }}" name="{{ $inputName }}" @required($required)><option value="">Pilih...</option>@foreach($options as $optionValue => $optionLabel)@php($actualValue = is_array($optionLabel) ? ($optionLabel['value'] ?? $optionValue) : $optionValue)@php($actualLabel = is_array($optionLabel) ? ($optionLabel['label'] ?? $actualValue) : $optionLabel)<option value="{{ $actualValue }}" @selected((string)$value === (string)$actualValue)>{{ $actualLabel }}</option>@endforeach</select>
     @elseif($type === 'media')
-        <select id="{{ $inputId }}" name="{{ $inputName }}{{ $multiple ? '[]' : '' }}" @if($multiple) multiple size="5" @endif @required($required)><option value="">Pilih media...</option>@foreach($mediaItems as $media)<option value="{{ $media->uuid }}" @selected(in_array($media->uuid, $selectedValues, true))>{{ $media->title ?: $media->original_filename }}</option>@endforeach</select>
-        <small>Pilih file dari Media Library. Buka menu Media untuk upload baru.</small>
-    @elseif($type === 'taxonomy')
-        <select id="{{ $inputId }}" name="{{ $inputName }}{{ $multiple ? '[]' : '' }}" @if($multiple) multiple size="6" @endif @required($required)><option value="">Pilih term...</option>@foreach($taxonomies as $taxonomy)<optgroup label="{{ $taxonomy->name }}">@foreach($taxonomy->terms as $term)<option value="{{ $term->uuid }}" @selected(in_array($term->uuid, $selectedValues, true))>{{ $term->name }}</option>@endforeach</optgroup>@endforeach</select>
-    @elseif($type === 'entry')
-        @include('ceemes::admin.fields.entry-picker', ['config' => $config, 'inputName' => $inputName, 'inputId' => $inputId, 'multiple' => $multiple, 'required' => $required, 'selectedValues' => $selectedValues])
+        @include('ceemes::admin.fields.media-picker', ['pickerTitle' => $field->label, 'inputName' => $inputName, 'inputId' => $inputId, 'multiple' => $multiple, 'selectedValues' => $selectedValues])
+    @elseif($type === 'category')
+        @include('ceemes::admin.fields.category-picker', ['pickerTitle' => $field->label, 'inputName' => $inputName, 'inputId' => $inputId, 'multiple' => $multiple, 'selectedValues' => $selectedValues])
+    @elseif(in_array($type, ['content', 'content'], true))
+        @include('ceemes::admin.fields.content-picker', ['config' => $config, 'inputName' => $inputName, 'inputId' => $inputId, 'multiple' => $multiple, 'required' => $required, 'selectedValues' => $selectedValues])
     @elseif($type === 'repeater')
         @include('ceemes::admin.fields.repeater', ['config' => $config, 'inputName' => $inputName, 'inputId' => $inputId, 'value' => $value])
     @elseif(in_array($type, ['group', 'seo'], true))
