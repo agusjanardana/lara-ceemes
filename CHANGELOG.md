@@ -2,7 +2,7 @@
 
 All notable changes to Lara Ceemes are documented in this file.
 
-## [Unreleased]
+## [0.2.0] - 2026-09-01
 
 ### Added
 
