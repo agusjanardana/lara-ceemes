@@ -29,8 +29,9 @@ migrations, creates the default Pages Set, Header/Footer Navigations,
 and minimum General/SEO/Cache/Media settings. It is safe to run more than once.
 
 The superadmin command uses the consuming application's configured User model.
-It asks for a name, email, and hidden password, creates the User when needed, and
-grants access without adding a role column to the application's `users` table.
+For a new User it asks for a name, email, and hidden password, then stores the
+`superadmin` role directly on that User. Promoting an existing User preserves
+their name and password unless `--force` is supplied.
 
 The package provides `/admin/login`, while the Admin CMS defaults to `/admin`
 and uses the consuming application's `web` and `auth` middleware. It also
@@ -42,6 +43,13 @@ hierarchical Navigation using parent items. Its compiled CSS and JavaScript are
 published by the installer, so the consuming application does not need a Node
 build step.
 
+Set Fields and Section Fields provide dedicated General, Validation, and
+Visibility tabs. Validation supports required values, text length, numeric
+ranges, collection limits, date ranges, and custom messages. Conditional
+visibility can depend on another field being filled, empty, equal to a value,
+containing a selection, or representing an enabled/disabled state. The same
+rules run in the Admin UI and on the server.
+
 ```env
 CEEMES_ADMIN_PREFIX=admin
 CEEMES_MEDIA_DISK=public
@@ -50,7 +58,17 @@ CEEMES_CACHE_TTL=3600
 CEEMES_AUTH_ROUTES=true
 CEEMES_HOMEPAGE_ENABLED=true
 CEEMES_PUBLIC_ROUTING=true
+CEEMES_MANAGE_USER_ROLE_COLUMN=true
+CEEMES_USER_ROLE_ATTRIBUTE=role
+CEEMES_DEFAULT_USER_ROLE=user
+CEEMES_SUPERADMIN_ROLE=superadmin
 ```
+
+By default, the package migration adds an indexed `role` column to `users`.
+When the application already owns a compatible role column, set
+`CEEMES_MANAGE_USER_ROLE_COLUMN=false` before migrating and point
+`CEEMES_USER_ROLE_ATTRIBUTE` to that column. Lara Ceemes never creates a
+separate superadmin table.
 
 Set `CEEMES_HOMEPAGE_ENABLED=false` when the consuming application is ready to
 own its public `/` route while keeping other CMS URLs active. Set
@@ -63,8 +81,9 @@ registered before the CMS catch-all route and therefore keep priority.
 
 ## Authorization
 
-Admin access is protected by the `access-ceemes` Gate. By default, only Users
-registered by `ceemes:make-superadmin` are allowed. Applications can replace the
+Admin access is protected by the `access-ceemes` Gate. By default, a User is
+allowed when the configured role attribute equals the configured superadmin
+role. `ceemes:make-superadmin` sets that value. Applications can replace the
 Gate in their own service provider:
 
 ```php
@@ -111,6 +130,29 @@ $siteName = Settings::get('general.site_name', 'My Website');
 $image = Media::find($mediaUuid);
 $seo = Seo::forContent($content);
 ```
+
+## Media folders and S3
+
+The Media Library supports searchable virtual folders and filters for images,
+documents, and other file types. Folder paths are stored as storage prefixes,
+so the same feature works with Laravel's `local`, `public`, and `s3` disks.
+
+For S3, install Laravel's Flysystem adapter in the consuming application,
+configure the `s3` disk in `config/filesystems.php`, and select it through the
+environment:
+
+```bash
+composer require league/flysystem-aws-s3-v3 "^3.0" --with-all-dependencies
+```
+
+```env
+CEEMES_MEDIA_DISK=s3
+CEEMES_MEDIA_DIRECTORY=ceemes
+```
+
+The database keeps empty folders visible; Lara Ceemes does not create fake
+placeholder objects in the S3 bucket. Moving Media between folders uses the
+configured Laravel filesystem disk.
 
 All CMS entities use UUID primary keys. Content visibility is controlled only by
 `draft` or `published` status in v0.1.

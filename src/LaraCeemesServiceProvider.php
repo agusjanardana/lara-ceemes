@@ -38,7 +38,7 @@ use LaraCeemes\Managers\SeoManager;
 use LaraCeemes\Managers\SetManager;
 use LaraCeemes\Managers\SettingManager;
 use LaraCeemes\Support\CeemesCache;
-use LaraCeemes\Support\SuperAdminRegistry;
+use LaraCeemes\Support\UserRoleAuthorizer;
 
 final class LaraCeemesServiceProvider extends ServiceProvider
 {
@@ -50,7 +50,7 @@ final class LaraCeemesServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(CeemesCache::class);
-        $this->app->singleton(SuperAdminRegistry::class);
+        $this->app->singleton(UserRoleAuthorizer::class);
         $this->app->singleton(SetManager::class);
         $this->app->singleton(ContentManager::class);
         $this->app->singleton(MediaManager::class);
@@ -102,7 +102,7 @@ final class LaraCeemesServiceProvider extends ServiceProvider
         if (! Gate::has((string) config('ceemes.admin.gate', 'access-ceemes'))) {
             Gate::define(
                 (string) config('ceemes.admin.gate', 'access-ceemes'),
-                fn (mixed $user): bool => $this->app->make(SuperAdminRegistry::class)->contains($user),
+                fn (mixed $user): bool => $this->app->make(UserRoleAuthorizer::class)->allows($user),
             );
         }
 

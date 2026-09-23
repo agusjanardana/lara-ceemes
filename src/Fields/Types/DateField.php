@@ -13,6 +13,16 @@ final class DateField extends AbstractStringField
 
     public function rules(array $config = []): array
     {
-        return [$this->presenceRule($config), 'date_format:Y-m-d'];
+        $rules = [$this->presenceRule($config), 'date_format:Y-m-d'];
+
+        if (isset($config['after_or_equal'])) {
+            $rules[] = 'after_or_equal:'.$config['after_or_equal'];
+        }
+
+        if (isset($config['before_or_equal'])) {
+            $rules[] = 'before_or_equal:'.$config['before_or_equal'];
+        }
+
+        return $rules;
     }
 }

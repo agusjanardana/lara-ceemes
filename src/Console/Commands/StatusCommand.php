@@ -11,7 +11,6 @@ use LaraCeemes\Models\CategoryGroup;
 use LaraCeemes\Models\Content;
 use LaraCeemes\Models\Media;
 use LaraCeemes\Models\Set;
-use LaraCeemes\Models\SuperAdmin;
 
 final class StatusCommand extends Command
 {
@@ -40,8 +39,16 @@ final class StatusCommand extends Command
             $this->components->twoColumnDetail('Category Groups', (string) CategoryGroup::query()->count());
             $this->components->twoColumnDetail('Media', (string) Media::withTrashed()->count());
 
-            if (Schema::hasTable('ceemes_super_admins')) {
-                $this->components->twoColumnDetail('Superadmins', (string) SuperAdmin::query()->count());
+            $usersTable = (string) config('ceemes.users.table', 'users');
+            $roleAttribute = (string) config('ceemes.users.role_attribute', 'role');
+
+            if (Schema::hasTable($usersTable) && Schema::hasColumn($usersTable, $roleAttribute)) {
+                $this->components->twoColumnDetail(
+                    'Superadmins',
+                    (string) DB::table($usersTable)
+                        ->where($roleAttribute, config('ceemes.users.superadmin_role', 'superadmin'))
+                        ->count(),
+                );
             }
         }
 

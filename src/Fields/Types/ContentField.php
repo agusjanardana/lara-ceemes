@@ -30,14 +30,24 @@ final class ContentField extends AbstractRelationField
             return [$this->presenceRule($config), 'uuid', $exists];
         }
 
-        return [
+        $rules = [
             $this->presenceRule($config),
             'array',
             function (string $attribute, mixed $value, callable $fail) use ($exists): void {
                 if (is_array($value) && Validator::make($value, ['*' => ['uuid', $exists]])->fails()) {
-                    $fail("The {$attribute} selection contains invalid Content.");
+                    $fail("Pilihan {$attribute} memuat Content yang tidak valid.");
                 }
             },
         ];
+
+        if (isset($config['min_items'])) {
+            $rules[] = 'min:'.(int) $config['min_items'];
+        }
+
+        if (isset($config['max_items'])) {
+            $rules[] = 'max:'.(int) $config['max_items'];
+        }
+
+        return $rules;
     }
 }

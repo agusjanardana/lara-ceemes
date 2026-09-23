@@ -13,33 +13,33 @@ use LaraCeemes\Actions\Sections\UpdateSectionField;
 use LaraCeemes\Fields\FieldRegistry;
 use LaraCeemes\Models\SectionField;
 use LaraCeemes\Models\SectionType;
+use LaraCeemes\Models\Set;
+use LaraCeemes\Support\FieldConfiguration;
 
 final class SectionFieldController extends AdminController
 {
-    public function __construct(private readonly FieldRegistry $registry) {}
+    public function __construct(
+        private readonly FieldRegistry $registry,
+        private readonly FieldConfiguration $fieldConfiguration,
+    ) {}
 
     public function index(SectionType $sectionType): View
     {
-        return $this->render('ceemes::admin.resource', [
-            'title' => "Section Fields: {$sectionType->name}",
-            'backUrl' => route('ceemes.admin.section-types.index'),
-            'storeUrl' => route('ceemes.admin.section-fields.store', $sectionType),
-            'fields' => $this->fields(),
-            'resources' => $sectionType->fields()->get()->map(fn (SectionField $field): array => [
-                'values' => [
-                    ...$field->only(['label', 'handle', 'type', 'width', 'sort_order']),
-                    'config' => json_encode($field->config ?? [], JSON_PRETTY_PRINT),
-                ],
-                'update_url' => route('ceemes.admin.section-fields.update', $field),
-                'delete_url' => route('ceemes.admin.section-fields.destroy', $field),
-            ]),
+        $fields = $sectionType->fields()->get();
+
+        return $this->render('ceemes::admin.section-fields.index', [
+            'sectionType' => $sectionType,
+            'fields' => $fields,
+            'fieldTypes' => array_keys($this->registry->all()),
+            'sets' => Set::query()->orderBy('name')->get(),
+            'sectionTypes' => SectionType::query()->orderBy('name')->get(),
         ]);
     }
 
     public function store(Request $request, SectionType $sectionType, CreateSectionField $action): RedirectResponse
     {
         $data = $request->all();
-        $data['config'] = $this->jsonObject($request->input('config'), 'config');
+        $data['config'] = $this->fieldConfiguration->fromRequest($request, $sectionType->fields()->get());
         $action->execute($sectionType, $data);
 
         return $this->success('ceemes.admin.section-fields.index', 'Section Field created.', $sectionType);
@@ -48,7 +48,10 @@ final class SectionFieldController extends AdminController
     public function update(Request $request, SectionField $sectionField, UpdateSectionField $action): RedirectResponse
     {
         $data = $request->all();
-        $data['config'] = $this->jsonObject($request->input('config'), 'config');
+        $data['config'] = $this->fieldConfiguration->fromRequest(
+            $request,
+            $sectionField->sectionType->fields()->where('uuid', '!=', $sectionField->uuid)->get(),
+        );
         $action->execute($sectionField, $data);
 
         return $this->success('ceemes.admin.section-fields.index', 'Section Field updated.', $sectionField->sectionType);
@@ -60,28 +63,5 @@ final class SectionFieldController extends AdminController
         $action->execute($sectionField);
 
         return $this->success('ceemes.admin.section-fields.index', 'Section Field deleted.', $sectionType);
-    }
-
-    /** @return array<int, array<string, mixed>> */
-    private function fields(): array
-    {
-        $handles = array_keys($this->registry->all());
-        $descriptions = [
-            'text' => 'Teks pendek satu baris', 'textarea' => 'Teks panjang beberapa baris', 'richtext' => 'Konten teks dengan editor',
-            'number' => 'Nilai angka', 'boolean' => 'Pilihan aktif atau tidak', 'select' => 'Pilihan dari daftar opsi',
-            'date' => 'Tanggal', 'datetime' => 'Tanggal dan waktu', 'email' => 'Alamat email', 'url' => 'Alamat URL',
-            'color' => 'Pemilih warna', 'media' => 'File dari Media Library', 'content' => 'Relasi ke Content dari Set',
-            'category' => 'Relasi ke Category Group', 'group' => 'Kelompok data terstruktur', 'repeater' => 'Data berulang',
-            'seo' => 'Data SEO terstruktur',
-        ];
-
-        return [
-            ['name' => 'label', 'label' => 'Label'],
-            ['name' => 'handle', 'label' => 'Handle'],
-            ['name' => 'type', 'label' => 'Type', 'type' => 'field_type_picker', 'options' => array_combine($handles, array_map('ucfirst', $handles)), 'descriptions' => $descriptions],
-            ['name' => 'config', 'label' => 'Config JSON', 'type' => 'textarea', 'default' => '{}'],
-            ['name' => 'width', 'label' => 'Width', 'type' => 'number', 'default' => 100],
-            ['name' => 'sort_order', 'label' => 'Sort order', 'type' => 'number', 'default' => 0],
-        ];
     }
 }

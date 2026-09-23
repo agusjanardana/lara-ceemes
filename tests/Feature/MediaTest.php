@@ -10,7 +10,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use LaraCeemes\Actions\Contents\CreateContent;
 use LaraCeemes\Actions\Contents\UpdateContent;
+use LaraCeemes\Actions\Media\CreateMediaFolder;
 use LaraCeemes\Actions\Media\DeleteMedia;
+use LaraCeemes\Actions\Media\DeleteMediaFolder;
 use LaraCeemes\Actions\Media\UpdateMedia;
 use LaraCeemes\Actions\Media\UploadMedia;
 use LaraCeemes\Actions\Sets\CreateSet;
@@ -19,6 +21,7 @@ use LaraCeemes\Exceptions\MediaInUse;
 use LaraCeemes\Facades\Media as MediaFacade;
 use LaraCeemes\Models\Content;
 use LaraCeemes\Models\Media;
+use LaraCeemes\Models\MediaFolder;
 use LaraCeemes\Tests\TestCase;
 
 final class MediaTest extends TestCase
@@ -63,6 +66,30 @@ final class MediaTest extends TestCase
 
         self::assertSame('Homepage Hero', $updated->title);
         self::assertSame($media->uuid, MediaFacade::search('Homepage')->first()?->uuid);
+    }
+
+    public function test_media_folders_use_storage_prefixes_and_work_with_s3_disks(): void
+    {
+        config()->set('ceemes.media.disk', 's3');
+        Storage::fake('s3');
+        $folder = $this->app->make(CreateMediaFolder::class)->execute(['name' => 'Product Photos']);
+
+        $media = $this->app->make(UploadMedia::class)->execute(
+            UploadedFile::fake()->image('shoe.jpg', 400, 300),
+            ['folder_uuid' => $folder->uuid],
+        );
+
+        self::assertSame('product-photos', $folder->path);
+        self::assertSame($folder->uuid, $media->folder_uuid);
+        self::assertSame('ceemes/product-photos', $media->directory);
+        Storage::disk('s3')->assertExists($media->path());
+
+        $updated = $this->app->make(UpdateMedia::class)->execute($media, ['folder_uuid' => null]);
+        self::assertNull($updated->folder_uuid);
+        self::assertSame('ceemes', $updated->directory);
+        Storage::disk('s3')->assertExists($updated->path());
+        $this->app->make(DeleteMediaFolder::class)->execute($folder);
+        self::assertSame(0, MediaFolder::query()->count());
     }
 
     public function test_referenced_media_is_reported_and_cannot_be_deleted(): void

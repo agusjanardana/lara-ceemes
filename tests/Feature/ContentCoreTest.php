@@ -13,8 +13,10 @@ use LaraCeemes\Actions\Contents\UpdateContent;
 use LaraCeemes\Actions\Sets\CreateSet;
 use LaraCeemes\Actions\Sets\CreateSetField;
 use LaraCeemes\Actions\Sets\DeleteSet;
+use LaraCeemes\Actions\Sets\DeleteSetField;
 use LaraCeemes\Actions\Sets\ReorderSetFields;
 use LaraCeemes\Actions\Sets\UpdateSet;
+use LaraCeemes\Actions\Sets\UpdateSetField;
 use LaraCeemes\Enums\ContentStatus;
 use LaraCeemes\Events\ContentPublished;
 use LaraCeemes\Exceptions\StructureInUse;
@@ -130,6 +132,98 @@ final class ContentCoreTest extends TestCase
             'title' => 'Home',
             'data' => ['arbitrary_html' => '<h1>Unsafe structure</h1>'],
         ]);
+    }
+
+    public function test_hidden_conditional_field_is_not_required_or_stored(): void
+    {
+        $set = $this->makeSet();
+        $createField = $this->app->make(CreateSetField::class);
+        $createField->execute($set, [
+            'handle' => 'page_type',
+            'label' => 'Page Type',
+            'type' => 'select',
+            'config' => ['required' => true, 'options' => ['personal' => 'Personal', 'business' => 'Business']],
+        ]);
+        $createField->execute($set, [
+            'handle' => 'company_name',
+            'label' => 'Company Name',
+            'type' => 'text',
+            'config' => [
+                'required' => true,
+                'min_length' => 3,
+                'visibility' => ['enabled' => true, 'field' => 'page_type', 'operator' => 'equals', 'value' => 'business'],
+            ],
+        ]);
+
+        $content = $this->app->make(CreateContent::class)->execute($set, [
+            'title' => 'Personal Page',
+            'data' => ['page_type' => 'personal', 'company_name' => 'must be discarded'],
+        ]);
+
+        self::assertSame('personal', $content->get('page_type'));
+        self::assertFalse($content->has('company_name'));
+    }
+
+    public function test_visible_conditional_field_uses_length_rules_and_clear_messages(): void
+    {
+        $set = $this->makeSet();
+        $createField = $this->app->make(CreateSetField::class);
+        $createField->execute($set, [
+            'handle' => 'page_type',
+            'label' => 'Page Type',
+            'type' => 'select',
+            'config' => ['required' => true, 'options' => ['business' => 'Business']],
+        ]);
+        $createField->execute($set, [
+            'handle' => 'company_name',
+            'label' => 'Company Name',
+            'type' => 'text',
+            'config' => [
+                'required' => true,
+                'min_length' => 5,
+                'max_length' => 20,
+                'visibility' => ['enabled' => true, 'field' => 'page_type', 'operator' => 'equals', 'value' => 'business'],
+            ],
+        ]);
+
+        try {
+            $this->app->make(CreateContent::class)->execute($set, [
+                'title' => 'Business Page',
+                'data' => ['page_type' => 'business', 'company_name' => 'AC'],
+            ]);
+            self::fail('A visible field below its minimum length was accepted.');
+        } catch (ValidationException $exception) {
+            self::assertSame(
+                'Company Name belum memenuhi batas minimum yang ditentukan.',
+                $exception->errors()['company_name'][0],
+            );
+        }
+
+        $content = $this->app->make(CreateContent::class)->execute($set, [
+            'title' => 'Valid Business Page',
+            'data' => ['page_type' => 'business', 'company_name' => 'Acme Ltd'],
+        ]);
+
+        self::assertSame('Acme Ltd', $content->get('company_name'));
+    }
+
+    public function test_visibility_references_follow_source_renames_and_are_disabled_on_delete(): void
+    {
+        $set = $this->makeSet();
+        $createField = $this->app->make(CreateSetField::class);
+        $source = $createField->execute($set, ['handle' => 'kind', 'label' => 'Kind', 'type' => 'text']);
+        $dependent = $createField->execute($set, [
+            'handle' => 'details',
+            'label' => 'Details',
+            'type' => 'text',
+            'config' => ['visibility' => ['enabled' => true, 'field' => 'kind', 'operator' => 'filled']],
+        ]);
+
+        $this->app->make(UpdateSetField::class)->execute($source, ['handle' => 'content_kind']);
+        self::assertSame('content_kind', $dependent->refresh()->config['visibility']['field']);
+
+        $this->app->make(DeleteSetField::class)->execute($source->refresh());
+        self::assertArrayNotHasKey('visibility', $dependent->refresh()->config);
     }
 
     public function test_published_query_uses_status_only_and_facades_resolve_content(): void

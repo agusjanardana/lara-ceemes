@@ -6,7 +6,6 @@ namespace LaraCeemes\Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use LaraCeemes\Support\SuperAdminRegistry;
 use LaraCeemes\Tests\Fixtures\User;
 use LaraCeemes\Tests\TestCase;
 
@@ -20,8 +19,8 @@ final class AuthenticationTest extends TestCase
             'name' => 'Super Admin',
             'email' => 'admin@example.com',
             'password' => Hash::make('password123'),
+            'role' => 'superadmin',
         ]);
-        app(SuperAdminRegistry::class)->promote($user);
 
         $this->post('/admin/login', [
             'email' => 'admin@example.com',
@@ -42,6 +41,7 @@ final class AuthenticationTest extends TestCase
             'name' => 'Regular User',
             'email' => 'user@example.com',
             'password' => Hash::make('password123'),
+            'role' => 'user',
         ]);
 
         $this->from('/admin/login')->post('/admin/login', [

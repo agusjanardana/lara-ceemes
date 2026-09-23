@@ -7,6 +7,7 @@ namespace LaraCeemes\Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use LaraCeemes\Actions\Categories\CreateCategoryGroup;
 use LaraCeemes\Actions\Contents\CreateContent;
 use LaraCeemes\Actions\Navigations\CreateNavigation;
 use LaraCeemes\Actions\Navigations\CreateNavigationItem;
@@ -14,11 +15,11 @@ use LaraCeemes\Actions\Sections\CreateSectionType;
 use LaraCeemes\Actions\Sets\CreateSet;
 use LaraCeemes\Actions\Sets\CreateSetField;
 use LaraCeemes\Models\Content;
+use LaraCeemes\Models\MediaFolder;
 use LaraCeemes\Models\Section;
 use LaraCeemes\Models\Set;
 use LaraCeemes\Models\SetField;
 use LaraCeemes\Models\Setting;
-use LaraCeemes\Support\SuperAdminRegistry;
 use LaraCeemes\Tests\Fixtures\User;
 use LaraCeemes\Tests\TestCase;
 
@@ -35,8 +36,8 @@ final class AdminTest extends TestCase
             'name' => 'Administrator',
             'email' => 'admin@example.com',
             'password' => Hash::make('password123'),
+            'role' => 'superadmin',
         ]);
-        app(SuperAdminRegistry::class)->promote($this->user);
     }
 
     public function test_guest_is_redirected_to_package_login_page(): void
@@ -175,6 +176,7 @@ final class AdminTest extends TestCase
             ->assertOk()
             ->assertDontSee('Kelola Fields')
             ->assertSee('edit-fixed-field-'.$mediaField->uuid)
+            ->assertSee('Atur struktur Gallery')
             ->assertSee('data-relation-picker', false)
             ->assertSee('Media Library')
             ->assertDontSee('<select id="content-gallery"', false);
@@ -187,6 +189,28 @@ final class AdminTest extends TestCase
             ->assertSee('data-field-type-picker', false)
             ->assertSee('Pilih Field Type')
             ->assertSee('File dari Media Library');
+    }
+
+    public function test_sidebar_groups_and_media_folder_filters_are_available(): void
+    {
+        app(CreateSet::class)->execute(['name' => 'Products']);
+        app(CreateCategoryGroup::class)->execute(['name' => 'Product Categories']);
+
+        $this->actingAs($this->user)
+            ->get('/admin/media')
+            ->assertOk()
+            ->assertSee('data-nav-group="sets"', false)
+            ->assertSee('data-nav-group="categories"', false)
+            ->assertSee('Products')
+            ->assertSee('Product Categories')
+            ->assertSee('Semua jenis')
+            ->assertSee('+ Folder');
+
+        $this->actingAs($this->user)
+            ->post('/admin/media-folders', ['name' => 'Product Photos'])
+            ->assertRedirect();
+
+        self::assertSame('product-photos', MediaFolder::query()->sole()->path);
     }
 
     public function test_admin_setting_form_writes_typed_setting(): void
@@ -230,6 +254,48 @@ final class AdminTest extends TestCase
             ->assertSee('Headline')
             ->assertSee('Build better websites')
             ->assertSee('Sections area');
+    }
+
+    public function test_field_builder_stores_validation_and_visibility_configuration(): void
+    {
+        $set = app(CreateSet::class)->execute(['name' => 'Pages']);
+        app(CreateSetField::class)->execute($set, [
+            'label' => 'Layout',
+            'handle' => 'layout',
+            'type' => 'select',
+            'config' => ['options' => ['default' => 'Default', 'campaign' => 'Campaign']],
+        ]);
+
+        $this->actingAs($this->user)->post("/admin/sets/{$set->uuid}/fields", [
+            'label' => 'Campaign Headline',
+            'handle' => 'campaign_headline',
+            'type' => 'text',
+            'width' => 100,
+            'sort_order' => 1,
+            'config' => [
+                'required' => '1',
+                'min_length' => '10',
+                'max_length' => '80',
+                'validation_message' => 'Campaign headline harus berisi 10-80 karakter.',
+                'visibility' => ['enabled' => '1', 'field' => 'layout', 'operator' => 'equals', 'value' => 'campaign'],
+            ],
+            'advanced_config' => '{}',
+        ])->assertRedirect();
+
+        $field = SetField::query()->where('handle', 'campaign_headline')->sole();
+        self::assertTrue($field->config['required']);
+        self::assertSame(10, $field->config['min_length']);
+        self::assertSame(80, $field->config['max_length']);
+        self::assertSame('layout', $field->config['visibility']['field']);
+        self::assertSame('campaign', $field->config['visibility']['value']);
+
+        $content = app(CreateContent::class)->execute($set, ['title' => 'Home', 'data' => ['layout' => 'default']]);
+        $this->actingAs($this->user)->get("/admin/contents/{$content->uuid}/edit")
+            ->assertOk()
+            ->assertSee('Validation')
+            ->assertSee('Visibility')
+            ->assertSee('data-conditional-field', false)
+            ->assertSee('data-visibility-source="layout"', false);
     }
 
     public function test_set_sections_field_controls_the_content_page_builder(): void

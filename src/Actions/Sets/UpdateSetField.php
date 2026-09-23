@@ -28,7 +28,26 @@ final class UpdateSetField extends Action
         ])->validate();
 
         return $this->transaction(function () use ($field, $validated): SetField {
+            $previousHandle = $field->handle;
             $field->update($validated);
+
+            if ($field->handle !== $previousHandle) {
+                $field->set->fields()
+                    ->where('uuid', '!=', $field->uuid)
+                    ->get()
+                    ->each(function (SetField $dependent) use ($previousHandle, $field): void {
+                        $config = is_array($dependent->config) ? $dependent->config : [];
+                        $visibility = is_array($config['visibility'] ?? null) ? $config['visibility'] : [];
+                        if (($visibility['field'] ?? null) !== $previousHandle) {
+                            return;
+                        }
+
+                        $visibility['field'] = $field->handle;
+                        $config['visibility'] = $visibility;
+                        $dependent->update(['config' => $config]);
+                    });
+            }
+
             $this->cache->set($field->set->handle);
 
             return $field->refresh();

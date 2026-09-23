@@ -2,6 +2,8 @@
     $config = $field?->config ?? [];
     $options = is_array($config['options'] ?? null) ? collect($config['options'])->map(fn ($label, $value) => $value.': '.$label)->implode("\n") : '';
     $selectedType = $field?->type ?? 'text';
+    $visibility = is_array($config['visibility'] ?? null) ? $config['visibility'] : [];
+    $visibilityFields = collect($fields ?? [])->reject(fn ($candidate) => isset($field->uuid) && $candidate->uuid === $field->uuid);
     $repeaterFields = array_values(array_filter($config['fields'] ?? [], 'is_array'));
     $repeaterTypes = array_values(array_diff($fieldTypes, ['repeater', 'sections', 'group', 'seo']));
     $typeDescriptions = [
@@ -13,7 +15,9 @@
         'sections' => 'Area page builder reusable', 'seo' => 'Data SEO terstruktur',
     ];
 @endphp
-<div class="ceemes-form-grid">
+<div class="ceemes-config-tabs" data-config-tabs>
+    <div class="ceemes-editor-tabs" role="tablist"><button type="button" class="is-active" data-config-tab="general">General</button><button type="button" data-config-tab="validation">Validation</button><button type="button" data-config-tab="visibility">Visibility</button></div>
+    <div data-config-panel="general"><div class="ceemes-form-grid">
     <div class="ceemes-field"><label for="{{ $formPrefix }}-label">Label <em>*</em></label><input id="{{ $formPrefix }}-label" name="label" value="{{ $field?->label }}" placeholder="Headline" required data-slug-source="#{{ $formPrefix }}-handle"><small>Nama yang terlihat oleh editor.</small></div>
     <div class="ceemes-field"><label for="{{ $formPrefix }}-handle">Handle</label><input id="{{ $formPrefix }}-handle" name="handle" value="{{ $field?->handle }}" placeholder="headline" data-slug-target><small>Boleh kosong saat membuat; diisi otomatis.</small></div>
     <div class="ceemes-field"><label>Field type <em>*</em></label><input type="hidden" name="type" value="{{ $selectedType }}" data-field-type-select><button class="ceemes-picker-trigger" type="button" data-dialog-open="field-type-{{ $formPrefix }}"><span><strong data-field-type-label>{{ $selectedType === 'sections' ? 'Sections (Page Builder)' : ucfirst($selectedType) }}</strong><small data-field-type-description>{{ $typeDescriptions[$selectedType] ?? 'Field type' }}</small></span><b>Choose</b></button></div>
@@ -22,7 +26,6 @@
     <div class="ceemes-field"><label>Placeholder</label><input name="config[placeholder]" value="{{ $config['placeholder'] ?? '' }}" placeholder="Teks contoh di dalam input"></div>
     <div class="ceemes-field"><label>Sort order</label><input type="number" min="0" name="sort_order" value="{{ $field?->sort_order ?? $fields->count() }}"></div>
     <div class="ceemes-field ceemes-field-wide"><label>Options <small>(untuk Select)</small></label><textarea name="config[options_text]" placeholder="news: News&#10;article: Article">{{ $options }}</textarea><small>Satu pilihan per baris dengan format value: Label.</small></div>
-    <input type="hidden" name="config[required]" value="0"><label class="ceemes-check"><input type="checkbox" name="config[required]" value="1" @checked((bool)($config['required'] ?? false))> Field wajib diisi</label>
     <input type="hidden" name="config[multiple]" value="0"><label class="ceemes-check"><input type="checkbox" name="config[multiple]" value="1" @checked((bool)($config['multiple'] ?? false))> Izinkan banyak pilihan <small>(Content, Media, Category)</small></label>
     <div class="ceemes-sections-config ceemes-field-wide" data-sections-config>
         <div><strong>Section Types yang diizinkan</strong><p>Pilih blok yang boleh ditambahkan editor pada area ini.</p></div>
@@ -58,6 +61,30 @@
         </div>
     </div>
     <details class="ceemes-advanced-config ceemes-field-wide"><summary>Advanced config JSON</summary><div class="ceemes-field"><label>Konfigurasi tambahan</label><textarea class="ceemes-code-input" name="advanced_config">{{ json_encode($config, JSON_PRETTY_PRINT) }}</textarea><small>Opsional untuk konfigurasi tipe field yang belum tersedia di form.</small></div></details>
+    </div></div>
+
+    <div data-config-panel="validation" hidden>
+        <div class="ceemes-config-intro"><strong>Aturan input</strong><p>Aturan ini diperiksa di browser dan server saat editor menyimpan Content atau Section.</p></div>
+        <div class="ceemes-form-grid">
+            <div class="ceemes-field ceemes-field-wide"><input type="hidden" name="config[required]" value="0"><label class="ceemes-choice-card"><input type="checkbox" name="config[required]" value="1" @checked((bool)($config['required'] ?? false))><span><strong>Wajib diisi</strong><small>Content tidak dapat disimpan ketika field ini kosong dan sedang terlihat.</small></span></label></div>
+            <div class="ceemes-validation-group ceemes-field-wide" data-validation-for="text textarea richtext email url"><div class="ceemes-form-grid"><div class="ceemes-field"><label>Panjang minimum</label><input type="number" min="0" name="config[min_length]" value="{{ $config['min_length'] ?? '' }}" placeholder="Tidak dibatasi"></div><div class="ceemes-field"><label>Panjang maksimum</label><input type="number" min="0" name="config[max_length]" value="{{ $config['max_length'] ?? '' }}" placeholder="{{ $selectedType === 'text' ? '255' : 'Tidak dibatasi' }}"></div></div></div>
+            <div class="ceemes-validation-group ceemes-field-wide" data-validation-for="number"><div class="ceemes-form-grid"><div class="ceemes-field"><label>Nilai minimum</label><input type="number" step="any" name="config[min]" value="{{ $config['min'] ?? '' }}"></div><div class="ceemes-field"><label>Nilai maksimum</label><input type="number" step="any" name="config[max]" value="{{ $config['max'] ?? '' }}"></div><div class="ceemes-field ceemes-field-wide"><input type="hidden" name="config[integer]" value="0"><label class="ceemes-check"><input type="checkbox" name="config[integer]" value="1" @checked((bool)($config['integer'] ?? false))> Hanya izinkan bilangan bulat</label></div></div></div>
+            <div class="ceemes-validation-group ceemes-field-wide" data-validation-for="media content category group seo"><div class="ceemes-form-grid"><div class="ceemes-field"><label>Minimum pilihan/item</label><input type="number" min="0" name="config[min_items]" value="{{ $config['min_items'] ?? '' }}"></div><div class="ceemes-field"><label>Maksimum pilihan/item</label><input type="number" min="0" name="config[max_items]" value="{{ $config['max_items'] ?? '' }}"></div></div></div>
+            <div class="ceemes-validation-group ceemes-field-wide" data-validation-for="date datetime"><div class="ceemes-form-grid"><div class="ceemes-field"><label>Tidak sebelum</label><input type="{{ $selectedType === 'datetime' ? 'datetime-local' : 'date' }}" name="config[after_or_equal]" value="{{ $config['after_or_equal'] ?? '' }}"></div><div class="ceemes-field"><label>Tidak setelah</label><input type="{{ $selectedType === 'datetime' ? 'datetime-local' : 'date' }}" name="config[before_or_equal]" value="{{ $config['before_or_equal'] ?? '' }}"></div></div></div>
+            <div class="ceemes-field ceemes-field-wide"><label>Pesan error khusus</label><input name="config[validation_message]" value="{{ $config['validation_message'] ?? '' }}" placeholder="Contoh: Headline harus diisi maksimal 80 karakter."><small>Kosongkan untuk memakai pesan otomatis berdasarkan label dan aturan yang gagal.</small></div>
+        </div>
+    </div>
+
+    <div data-config-panel="visibility" hidden>
+        <div class="ceemes-config-intro"><strong>Conditional visibility</strong><p>Tampilkan field hanya ketika nilai field lain memenuhi kondisi. Field tersembunyi tidak akan divalidasi atau disimpan.</p></div>
+        <div class="ceemes-form-grid">
+            <div class="ceemes-field ceemes-field-wide"><input type="hidden" name="config[visibility][enabled]" value="0"><label class="ceemes-choice-card"><input type="checkbox" name="config[visibility][enabled]" value="1" @checked((bool)($visibility['enabled'] ?? false)) data-visibility-enabled><span><strong>Aktifkan Visible when</strong><small>Cocok untuk field lanjutan setelah toggle, pilihan Select, atau relasi diisi.</small></span></label></div>
+            <div class="ceemes-field" data-visibility-setting><label>Field sumber</label><select name="config[visibility][field]" data-visibility-source><option value="">Pilih field...</option>@foreach($visibilityFields as $candidate)<option value="{{ $candidate->handle }}" data-options="{{ json_encode(is_array($candidate->config['options'] ?? null) ? $candidate->config['options'] : []) }}" @selected(($visibility['field'] ?? '') === $candidate->handle)>{{ $candidate->label }} ({{ $candidate->handle }})</option>@endforeach</select><small>Gunakan field lain dalam Set atau Section Type yang sama.</small></div>
+            <div class="ceemes-field" data-visibility-setting><label>Kondisi</label><select name="config[visibility][operator]" data-visibility-operator><option value="filled" @selected(($visibility['operator'] ?? '') === 'filled')>Sudah diisi</option><option value="empty" @selected(($visibility['operator'] ?? '') === 'empty')>Masih kosong</option><option value="equals" @selected(($visibility['operator'] ?? '') === 'equals')>Sama dengan</option><option value="not_equals" @selected(($visibility['operator'] ?? '') === 'not_equals')>Berbeda dengan</option><option value="contains" @selected(($visibility['operator'] ?? '') === 'contains')>Memuat pilihan/nilai</option><option value="not_contains" @selected(($visibility['operator'] ?? '') === 'not_contains')>Tidak memuat pilihan/nilai</option><option value="truthy" @selected(($visibility['operator'] ?? '') === 'truthy')>Aktif / Ya</option><option value="falsy" @selected(($visibility['operator'] ?? '') === 'falsy')>Nonaktif / Tidak</option></select></div>
+            <div class="ceemes-field ceemes-field-wide" data-visibility-value><label>Nilai pembanding</label><input name="config[visibility][value]" value="{{ $visibility['value'] ?? '' }}" list="visibility-options-{{ $formPrefix }}" placeholder="Masukkan value opsi, misalnya business"><datalist id="visibility-options-{{ $formPrefix }}" data-visibility-options></datalist><small>Untuk Select gunakan value opsi, bukan label tampilannya.</small></div>
+            @if($visibilityFields->isEmpty())<div class="ceemes-inline-note ceemes-field-wide">Buat minimal satu field lain terlebih dahulu sebelum memakai conditional visibility.</div>@endif
+        </div>
+    </div>
 </div>
 
 <dialog class="ceemes-dialog ceemes-picker-dialog" id="field-type-{{ $formPrefix }}" data-field-type-picker>

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace LaraCeemes\Models;
 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
 
 /**
  * @property string $uuid
+ * @property string|null $folder_uuid
  * @property string $disk
  * @property string $directory
  * @property string $filename
@@ -22,6 +24,7 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $alt
  * @property string|null $caption
  * @property int|string|null $uploaded_by
+ * @property-read MediaFolder|null $folder
  */
 final class Media extends CeemesModel
 {
@@ -31,6 +34,7 @@ final class Media extends CeemesModel
 
     protected $fillable = [
         'uuid',
+        'folder_uuid',
         'disk',
         'directory',
         'filename',
@@ -58,6 +62,12 @@ final class Media extends CeemesModel
     public function path(): string
     {
         return ltrim(trim($this->directory, '/').'/'.$this->filename, '/');
+    }
+
+    /** @return BelongsTo<MediaFolder, $this> */
+    public function folder(): BelongsTo
+    {
+        return $this->belongsTo(MediaFolder::class, 'folder_uuid');
     }
 
     public function url(): string

@@ -9,6 +9,7 @@ use LaraCeemes\Http\Controllers\Admin\ContentController;
 use LaraCeemes\Http\Controllers\Admin\DashboardController;
 use LaraCeemes\Http\Controllers\Admin\FieldController;
 use LaraCeemes\Http\Controllers\Admin\MediaController;
+use LaraCeemes\Http\Controllers\Admin\MediaFolderController;
 use LaraCeemes\Http\Controllers\Admin\NavigationController;
 use LaraCeemes\Http\Controllers\Admin\NavigationItemController;
 use LaraCeemes\Http\Controllers\Admin\SectionController;
@@ -97,6 +98,8 @@ Route::prefix($adminPrefix)
         Route::delete('navigation-items/{navigationItem}', [NavigationItemController::class, 'destroy'])->name('navigation-items.destroy');
 
         Route::get('media', [MediaController::class, 'index'])->name('media.index');
+        Route::post('media-folders', [MediaFolderController::class, 'store'])->name('media-folders.store');
+        Route::delete('media-folders/{mediaFolder}', [MediaFolderController::class, 'destroy'])->name('media-folders.destroy');
         Route::post('media', [MediaController::class, 'store'])->name('media.store');
         Route::put('media/{media}', [MediaController::class, 'update'])->name('media.update');
         Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');

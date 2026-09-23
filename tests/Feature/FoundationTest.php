@@ -38,13 +38,14 @@ final class FoundationTest extends TestCase
             'ceemes_navigation_items',
             'ceemes_settings',
             'ceemes_media',
-            'ceemes_super_admins',
+            'ceemes_media_folders',
         ];
 
         foreach ($tables as $table) {
             self::assertTrue(Schema::hasTable($table), "Missing table: {$table}");
         }
 
+        self::assertTrue(Schema::hasColumn('users', 'role'));
     }
 
     public function test_cms_tables_use_uuid_primary_keys_without_integer_ids(): void

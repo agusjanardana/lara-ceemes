@@ -10,6 +10,10 @@ abstract class AbstractStringField extends AbstractFieldType
     {
         $rules = [$this->presenceRule($config), 'string'];
 
+        if (isset($config['min_length'])) {
+            $rules[] = 'min:'.(int) $config['min_length'];
+        }
+
         if (isset($config['max_length'])) {
             $rules[] = 'max:'.(int) $config['max_length'];
         }

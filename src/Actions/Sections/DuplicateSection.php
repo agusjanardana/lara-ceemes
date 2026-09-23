@@ -32,9 +32,9 @@ final class DuplicateSection extends Action
                 $placement = $section->contents()->whereKey($targetContent->uuid)->first()?->pivot;
                 $targetContent->placedSections()->attach($duplicate->uuid, [
                     'uuid' => (string) Str::uuid(),
-                    'region' => $placement?->region ?? 'sections',
+                    'region' => $placement?->getAttribute('region') ?? 'sections',
                     'key' => $key,
-                    'sort_order' => ((int) ($placement?->sort_order ?? 0)) + 1,
+                    'sort_order' => ((int) ($placement?->getAttribute('sort_order') ?? 0)) + 1,
                     'is_enabled' => true,
                 ]);
                 $this->cache->content($targetContent);

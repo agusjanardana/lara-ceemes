@@ -9,6 +9,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\ValidationException;
+use LaraCeemes\Models\CategoryGroup;
 use LaraCeemes\Models\SectionField;
 use LaraCeemes\Models\Set;
 use LaraCeemes\Models\SetField;
@@ -21,6 +22,9 @@ abstract class AdminController extends Controller
         return app(Factory::class)->make($view, [
             'sidebarSets' => Set::query()
                 ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get(['uuid', 'name', 'handle']),
+            'sidebarCategoryGroups' => CategoryGroup::query()
                 ->orderBy('name')
                 ->get(['uuid', 'name', 'handle']),
             ...$data,

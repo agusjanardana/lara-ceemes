@@ -123,6 +123,7 @@ final class CliTest extends TestCase
         $user = User::query()->where('email', 'owner@example.com')->sole();
 
         self::assertSame('Site Owner', $user->name);
+        self::assertSame('superadmin', $user->role);
         self::assertTrue(Hash::check('password123', $user->password));
         self::assertTrue(Gate::forUser($user)->allows('access-ceemes'));
 
@@ -132,5 +133,7 @@ final class CliTest extends TestCase
         ])->assertSuccessful();
 
         self::assertSame(1, User::query()->count());
+        self::assertSame('Site Owner', $user->fresh()->name);
+        self::assertTrue(Hash::check('password123', $user->fresh()->password));
     }
 }

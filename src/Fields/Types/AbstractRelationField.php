@@ -9,7 +9,17 @@ abstract class AbstractRelationField extends AbstractFieldType
     public function rules(array $config = []): array
     {
         if ($this->allowsMultiple($config)) {
-            return [$this->presenceRule($config), 'array'];
+            $rules = [$this->presenceRule($config), 'array'];
+
+            if (isset($config['min_items'])) {
+                $rules[] = 'min:'.(int) $config['min_items'];
+            }
+
+            if (isset($config['max_items'])) {
+                $rules[] = 'max:'.(int) $config['max_items'];
+            }
+
+            return $rules;
         }
 
         return [$this->presenceRule($config), 'uuid'];

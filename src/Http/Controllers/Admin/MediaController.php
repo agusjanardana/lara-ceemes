@@ -13,15 +13,23 @@ use LaraCeemes\Actions\Media\UploadMedia;
 use LaraCeemes\Exceptions\MediaInUse;
 use LaraCeemes\Managers\MediaManager;
 use LaraCeemes\Models\Media;
+use LaraCeemes\Models\MediaFolder;
 
 final class MediaController extends AdminController
 {
     public function index(Request $request, MediaManager $media): View
     {
-        $query = $request->string('q')->toString();
+        $query = $request->string('q')->trim()->toString();
+        $type = $request->string('type')->toString();
+        $folder = $request->string('folder')->toString();
+        $disk = (string) config('ceemes.media.disk', 'public');
+        $folders = MediaFolder::query()->where('disk', $disk)->orderBy('path')->get();
 
         return $this->render('ceemes::admin.media', [
-            'mediaItems' => $query !== '' ? $media->search($query) : $media->all(),
+            'mediaItems' => $media->filter($query, $type, $folder),
+            'folders' => $folders,
+            'activeFolder' => $folders->firstWhere('uuid', $folder),
+            'mediaDisk' => $disk,
         ]);
     }
 
@@ -33,14 +41,14 @@ final class MediaController extends AdminController
             return back()->withErrors(['file' => 'Please choose a file.']);
         }
 
-        $action->execute($file, $request->only(['title', 'alt', 'caption']));
+        $action->execute($file, $request->only(['title', 'alt', 'caption', 'folder_uuid']));
 
         return $this->success('ceemes.admin.media.index', 'Media uploaded.');
     }
 
     public function update(Request $request, Media $media, UpdateMedia $action): RedirectResponse
     {
-        $action->execute($media, $request->only(['title', 'alt', 'caption']));
+        $action->execute($media, $request->only(['title', 'alt', 'caption', 'folder_uuid']));
 
         return $this->success('ceemes.admin.media.index', 'Media updated.');
     }

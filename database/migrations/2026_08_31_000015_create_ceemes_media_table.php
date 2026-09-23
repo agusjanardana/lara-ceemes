@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create('ceemes_media', function (Blueprint $table): void {
             $table->uuid('uuid')->primary();
+            $table->uuid('folder_uuid')->nullable();
             $table->string('disk');
             $table->string('directory')->default('');
             $table->string('filename');
@@ -29,6 +30,7 @@ return new class extends Migration
             $table->softDeletes();
             $table->unique(['disk', 'directory', 'filename'], 'ceemes_media_path_unique');
             $table->index(['mime_type', 'created_at']);
+            $table->foreign('folder_uuid')->references('uuid')->on('ceemes_media_folders')->nullOnDelete()->cascadeOnUpdate();
         });
     }
 

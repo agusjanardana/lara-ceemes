@@ -76,9 +76,9 @@ final class SectionController extends AdminController
 
     public function toggle(Section $section, SetSectionEnabled $action): RedirectResponse
     {
-        $action->execute($section, ! $section->is_enabled);
-
         $content = $section->contents()->firstOrFail();
+        $enabled = ! (bool) $content->pivot->getAttribute('is_enabled');
+        $action->execute($section, $enabled);
 
         return $this->success('ceemes.admin.contents.edit', 'Section status updated.', $content);
     }

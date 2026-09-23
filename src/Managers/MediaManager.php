@@ -43,6 +43,30 @@ final class MediaManager extends Manager
             ->get();
     }
 
+    /** @return EloquentCollection<int, Media> */
+    public function filter(string $search = '', string $type = '', string $folder = ''): EloquentCollection
+    {
+        return Media::query()
+            ->with('folder')
+            ->when($search !== '', fn ($builder) => $builder->where(function ($builder) use ($search): void {
+                $builder->where('original_filename', 'like', "%{$search}%")
+                    ->orWhere('title', 'like', "%{$search}%")
+                    ->orWhere('alt', 'like', "%{$search}%");
+            }))
+            ->when($type === 'image', fn ($builder) => $builder->where('mime_type', 'like', 'image/%'))
+            ->when($type === 'document', fn ($builder) => $builder->where(function ($builder): void {
+                $builder->where('mime_type', 'like', 'application/%')->orWhere('mime_type', 'like', 'text/%');
+            }))
+            ->when($type === 'other', fn ($builder) => $builder
+                ->where('mime_type', 'not like', 'image/%')
+                ->where('mime_type', 'not like', 'application/%')
+                ->where('mime_type', 'not like', 'text/%'))
+            ->when($folder === 'root', fn ($builder) => $builder->whereNull('folder_uuid'))
+            ->when($folder !== '' && $folder !== 'root', fn ($builder) => $builder->where('folder_uuid', $folder))
+            ->latest()
+            ->get();
+    }
+
     /** @return array<int, MediaUsage> */
     public function usages(string|Media $media): array
     {

@@ -8,7 +8,17 @@ abstract class AbstractArrayField extends AbstractFieldType
 {
     public function rules(array $config = []): array
     {
-        return [$this->presenceRule($config), 'array'];
+        $rules = [$this->presenceRule($config), 'array'];
+
+        if (isset($config['min_items'])) {
+            $rules[] = 'min:'.(int) $config['min_items'];
+        }
+
+        if (isset($config['max_items'])) {
+            $rules[] = 'max:'.(int) $config['max_items'];
+        }
+
+        return $rules;
     }
 
     /** @return array<array-key, mixed>|null */

@@ -17,7 +17,7 @@ final class MediaField extends AbstractRelationField
 
     protected function allowsMultiple(array $config): bool
     {
-        return (int) ($config['max_files'] ?? 1) !== 1;
+        return ($config['multiple'] ?? false) === true || (int) ($config['max_files'] ?? 1) !== 1;
     }
 
     public function resolve(mixed $value, array $config = []): mixed

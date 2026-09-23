@@ -2,6 +2,25 @@
 
 All notable changes to Lara Ceemes are documented in this file.
 
+## [0.3.0] - 2026-09-23
+
+### Added
+
+- Field configuration tabs for validation and conditional visibility, including
+  clear field-level errors and matching browser/server behavior.
+- Media type filters, database-backed nested folders, and storage-prefix moves
+  compatible with Laravel local/public disks and S3.
+- Collapsible Set and Category Group shortcuts in the Admin sidebar.
+- Cleaner inline Fixed Field cards and searchable Media/Category pickers.
+
+### Changed
+
+- Admin authorization now uses a configurable role directly on the consuming
+  application's User model instead of a separate superadmin registry table.
+- Section Fields now use the same guided field builder as Set Fields.
+- Fresh-start migrations were reorganized into one canonical migration per
+  current table without legacy cleanup migrations.
+
 ## [0.2.0] - 2026-09-01
 
 ### Added

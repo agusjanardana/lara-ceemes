@@ -14,6 +14,7 @@ use LaraCeemes\Fields\FieldRegistry;
 use LaraCeemes\Models\CategoryGroup;
 use LaraCeemes\Models\Content;
 use LaraCeemes\Models\Media;
+use LaraCeemes\Models\MediaFolder;
 use LaraCeemes\Models\Section;
 use LaraCeemes\Models\SectionType;
 use LaraCeemes\Models\Set;
@@ -134,7 +135,8 @@ final class ContentController extends AdminController
     private function fieldResources(): array
     {
         return [
-            'mediaItems' => Media::query()->orderBy('original_filename')->get(),
+            'mediaItems' => Media::query()->with('folder')->orderBy('original_filename')->get(),
+            'mediaFolders' => MediaFolder::query()->where('disk', config('ceemes.media.disk', 'public'))->orderBy('path')->get(),
             'categoryGroups' => CategoryGroup::query()->with('categories')->orderBy('name')->get(),
             'contentOptions' => Content::query()
                 ->with('set:uuid,name,handle')

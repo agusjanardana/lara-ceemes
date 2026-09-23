@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use LaraCeemes\Actions\Action;
 use LaraCeemes\Events\MediaUploaded;
 use LaraCeemes\Models\Media;
+use LaraCeemes\Models\MediaFolder;
 use RuntimeException;
 use Throwable;
 
@@ -22,6 +24,7 @@ final class UploadMedia extends Action
     {
         $allowedMimes = config('ceemes.media.allowed_mimes', []);
         $maxSize = (int) config('ceemes.media.max_upload_size', 10240);
+        $disk = (string) config('ceemes.media.disk', 'public');
 
         Validator::make(['file' => $file], [
             'file' => [
@@ -34,6 +37,7 @@ final class UploadMedia extends Action
 
         $validatedMetadata = Validator::make($metadata, [
             'directory' => ['sometimes', 'string', 'max:255', 'not_regex:/\.\./'],
+            'folder_uuid' => ['nullable', 'uuid', Rule::exists('ceemes_media_folders', 'uuid')->where('disk', $disk)],
             'title' => ['nullable', 'string', 'max:255'],
             'alt' => ['nullable', 'string'],
             'caption' => ['nullable', 'string'],
@@ -43,8 +47,11 @@ final class UploadMedia extends Action
         $uuid = (string) Str::uuid();
         $extension = strtolower($file->getClientOriginalExtension() ?: (string) $file->guessExtension());
         $filename = $uuid.($extension !== '' ? ".{$extension}" : '');
-        $disk = (string) config('ceemes.media.disk', 'public');
-        $directory = trim((string) ($validatedMetadata['directory'] ?? config('ceemes.media.directory', 'ceemes')), '/\\');
+        $folder = isset($validatedMetadata['folder_uuid'])
+            ? MediaFolder::query()->whereKey($validatedMetadata['folder_uuid'])->where('disk', $disk)->firstOrFail()
+            : null;
+        $baseDirectory = trim((string) config('ceemes.media.directory', 'ceemes'), '/\\');
+        $directory = trim($baseDirectory.($folder ? '/'.$folder->path : ''), '/\\');
         $path = ltrim($directory.'/'.$filename, '/');
         $stored = Storage::disk($disk)->putFileAs($directory, $file, $filename);
 
@@ -65,6 +72,7 @@ final class UploadMedia extends Action
                 [$width, $height] = $this->dimensions($file);
                 $media = Media::query()->create([
                     'uuid' => $uuid,
+                    'folder_uuid' => $validatedMetadata['folder_uuid'] ?? null,
                     'disk' => $disk,
                     'directory' => $directory,
                     'filename' => $filename,
