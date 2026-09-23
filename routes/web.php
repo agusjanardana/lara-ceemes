@@ -19,6 +19,8 @@ use LaraCeemes\Http\Controllers\Admin\SectionPlacementController;
 use LaraCeemes\Http\Controllers\Admin\SectionTypeController;
 use LaraCeemes\Http\Controllers\Admin\SetController;
 use LaraCeemes\Http\Controllers\Admin\SettingController;
+use LaraCeemes\Http\Controllers\Admin\SiteController;
+use LaraCeemes\Http\Controllers\Admin\SwitchSiteController;
 use LaraCeemes\Http\Controllers\Auth\LoginController;
 
 $adminPrefix = trim((string) config('ceemes.admin.prefix', 'admin'), '/');
@@ -45,6 +47,11 @@ Route::prefix($adminPrefix)
     ->name('ceemes.admin.')
     ->group(function (): void {
         Route::get('/', DashboardController::class)->name('dashboard');
+        Route::post('sites/switch', SwitchSiteController::class)->name('sites.switch');
+        Route::get('sites', [SiteController::class, 'index'])->name('sites.index');
+        Route::post('sites', [SiteController::class, 'store'])->name('sites.store');
+        Route::put('sites/{site}', [SiteController::class, 'update'])->name('sites.update');
+        Route::delete('sites/{site}', [SiteController::class, 'destroy'])->name('sites.destroy');
 
         Route::get('sets', [SetController::class, 'index'])->name('sets.index');
         Route::post('sets', [SetController::class, 'store'])->name('sets.store');

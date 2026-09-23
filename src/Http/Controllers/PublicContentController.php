@@ -6,15 +6,20 @@ namespace LaraCeemes\Http\Controllers;
 
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use LaraCeemes\Enums\ContentStatus;
 use LaraCeemes\Managers\SeoManager;
 use LaraCeemes\Models\Content;
+use LaraCeemes\Support\SiteContext;
 
 final class PublicContentController
 {
-    public function __invoke(Factory $views, SeoManager $seoManager, ?string $ceemesPath = null): View
+    public function __invoke(Factory $views, SeoManager $seoManager, SiteContext $sites, Request $request): View
     {
+        $sites->current();
+        $ceemesPath = $request->route('ceemesPath');
+        $ceemesPath = is_string($ceemesPath) ? $ceemesPath : null;
         $uri = $ceemesPath === null || $ceemesPath === '' ? '/' : '/'.trim($ceemesPath, '/');
 
         if (! Schema::hasTable('ceemes_contents') || ! Schema::hasColumn('ceemes_contents', 'uri')) {

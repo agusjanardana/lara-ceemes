@@ -22,6 +22,7 @@ published Content URLs for content-managed pages.
 composer require janar/lara-ceemes
 php artisan ceemes:install
 php artisan ceemes:make-superadmin
+php artisan ceemes:make-agent-skill
 ```
 
 The installer publishes configuration and compiled Admin assets, runs
@@ -43,6 +44,12 @@ hierarchical Navigation using parent items. Its compiled CSS and JavaScript are
 published by the installer, so the consuming application does not need a Node
 build step.
 
+`ceemes:make-agent-skill` generates a project-local Lara Ceemes knowledge skill
+at `.agents/skills/lara-ceemes`. Commit that folder so coding agents working on
+the consuming application understand the CMS concepts, commands, APIs, routing,
+multisite boundaries, and recommended content architecture. Run it again with
+`--force` after a package update.
+
 Set Fields and Section Fields provide dedicated General, Validation, and
 Visibility tabs. Validation supports required values, text length, numeric
 ranges, collection limits, date ranges, and custom messages. Conditional
@@ -58,6 +65,10 @@ CEEMES_CACHE_TTL=3600
 CEEMES_AUTH_ROUTES=true
 CEEMES_HOMEPAGE_ENABLED=true
 CEEMES_PUBLIC_ROUTING=true
+CEEMES_MULTISITE_ENABLED=false
+CEEMES_DEFAULT_SITE=en
+CEEMES_DEFAULT_SITE_NAME="English"
+CEEMES_DEFAULT_SITE_LOCALE=en
 CEEMES_MANAGE_USER_ROLE_COLUMN=true
 CEEMES_USER_ROLE_ATTRIBUTE=role
 CEEMES_DEFAULT_USER_ROLE=user
@@ -121,6 +132,7 @@ use LaraCeemes\Facades\Navigation;
 use LaraCeemes\Facades\Seo;
 use LaraCeemes\Facades\Settings;
 use LaraCeemes\Facades\Section;
+use LaraCeemes\Facades\Site;
 
 $content = Content::find('pages', 'home');
 $sharedSections = Section::forContent($content)->enabled()->get();
@@ -129,6 +141,44 @@ $categories = Category::categories('categories');
 $siteName = Settings::get('general.site_name', 'My Website');
 $image = Media::find($mediaUuid);
 $seo = Seo::forContent($content);
+$activeSite = Site::current();
+```
+
+## Multisite
+
+Multisite is opt-in. Enable it in the consuming application's `.env`, publish
+the latest configuration when needed, and run the additive migrations:
+
+```env
+CEEMES_MULTISITE_ENABLED=true
+CEEMES_DEFAULT_SITE=en
+CEEMES_DEFAULT_SITE_NAME="English"
+CEEMES_DEFAULT_SITE_LOCALE=en
+```
+
+```bash
+php artisan vendor:publish --tag=ceemes-config --force
+php artisan migrate
+php artisan optimize:clear
+```
+
+The migration creates the default Site and assigns existing Content, Sections,
+and Navigations to it. Additional Sites are managed from **Admin > Sites**.
+The Site selector in the Admin top bar controls which site's Content, reusable
+Sections, and Navigations are being edited. Sets and their Fixed Fields,
+Section Types, Categories, Media, and Settings remain shared globally.
+
+With multisite enabled, a Homepage URI `/` is exposed as `/en`, while Contact
+URI `/contact` becomes `/en/contact`. A second Site with handle `id` exposes
+its own `/id` and `/id/contact`; `/` redirects to the enabled default Site.
+The same URI and slug may be reused across Sites. With multisite disabled,
+public URLs remain `/` and `/contact` with no Site prefix.
+
+CLI content and navigation creation accepts `--site`:
+
+```bash
+php artisan ceemes:make-content --set=pages --site=id --title="Kontak" --uri=/contact
+php artisan ceemes:make-navigation footer --site=id
 ```
 
 ## Media folders and S3
@@ -184,7 +234,7 @@ Section Types.
 
 ## Public Content Routing
 
-Every Content has a globally unique Public URL. Set a published Homepage Content to
+Every Content has a unique Public URL within its Site. Set a published Homepage Content to
 `/`, Contact to `/contact`, or use nested paths such as `/company/team`. Draft
 Contents in non-publishable Sets return 404.
 
@@ -220,10 +270,11 @@ ceemes:install
 ceemes:status
 ceemes:cache:clear
 ceemes:make-superadmin
+ceemes:make-agent-skill
 ceemes:make-set
 ceemes:make-set-field
 ceemes:make-content
-ceemes:make-section-type
+ceemes:make-section
 ceemes:make-section-field
 ceemes:make-category-group
 ceemes:make-category

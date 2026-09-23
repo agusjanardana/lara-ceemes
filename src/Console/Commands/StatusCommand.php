@@ -11,6 +11,7 @@ use LaraCeemes\Models\CategoryGroup;
 use LaraCeemes\Models\Content;
 use LaraCeemes\Models\Media;
 use LaraCeemes\Models\Set;
+use LaraCeemes\Models\Site;
 
 final class StatusCommand extends Command
 {
@@ -32,10 +33,12 @@ final class StatusCommand extends Command
         $this->components->twoColumnDetail('Database', $databaseConnected ? '<fg=green>Connected</>' : '<fg=red>Unavailable</>');
         $this->components->twoColumnDetail('Migrations', $installed ? '<fg=green>Installed</>' : '<fg=yellow>Not installed</>');
         $this->components->twoColumnDetail('Cache', config('ceemes.cache.enabled') ? 'Enabled' : 'Disabled');
+        $this->components->twoColumnDetail('Multisite', config('ceemes.multisite.enabled') ? 'Enabled' : 'Disabled');
 
         if ($installed) {
+            $this->components->twoColumnDetail('Sites', (string) Site::query()->count());
             $this->components->twoColumnDetail('Sets', (string) Set::query()->count());
-            $this->components->twoColumnDetail('Contents', (string) Content::withTrashed()->count());
+            $this->components->twoColumnDetail('Contents', (string) Content::withoutGlobalScope('ceemes_site')->withTrashed()->count());
             $this->components->twoColumnDetail('Category Groups', (string) CategoryGroup::query()->count());
             $this->components->twoColumnDetail('Media', (string) Media::withTrashed()->count());
 

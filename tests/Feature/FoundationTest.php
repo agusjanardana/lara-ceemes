@@ -24,6 +24,7 @@ final class FoundationTest extends TestCase
     public function test_all_ceemes_tables_are_migrated(): void
     {
         $tables = [
+            'ceemes_sites',
             'ceemes_sets',
             'ceemes_set_fields',
             'ceemes_contents',
@@ -71,6 +72,7 @@ final class FoundationTest extends TestCase
 
         $setUuid = (string) Str::uuid();
         $contentUuid = (string) Str::uuid();
+        $siteUuid = (string) DB::table('ceemes_sites')->where('is_default', true)->value('uuid');
 
         DB::table('ceemes_sets')->insert([
             'uuid' => $setUuid,
@@ -82,6 +84,7 @@ final class FoundationTest extends TestCase
 
         DB::table('ceemes_contents')->insert([
             'uuid' => $contentUuid,
+            'site_uuid' => $siteUuid,
             'set_uuid' => $setUuid,
             'title' => 'Home',
             'slug' => 'home',

@@ -17,7 +17,7 @@ final class DeleteNavigation extends Action
         $this->transaction(function () use ($navigation): void {
             $handle = $navigation->handle;
             $navigation->delete();
-            $this->cache->forget("navigation:{$handle}");
+            $this->cache->forget("site:{$navigation->site_uuid}:navigation:{$handle}");
         });
     }
 }

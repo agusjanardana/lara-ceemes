@@ -30,12 +30,12 @@ final class ClearCacheCommand extends Command
             $cache->forget("categoryGroup:{$handle}");
         }
 
-        foreach (Navigation::query()->pluck('handle') as $handle) {
-            $cache->forget("navigation:{$handle}");
+        foreach (Navigation::withoutGlobalScope('ceemes_site')->get(['site_uuid', 'handle']) as $navigation) {
+            $cache->forget("site:{$navigation->site_uuid}:navigation:{$navigation->handle}");
         }
 
-        Content::query()->with('set')->each(function (Content $content) use ($cache): void {
-            $cache->forget("content:{$content->set->handle}:{$content->slug}");
+        Content::withoutGlobalScope('ceemes_site')->with('set')->each(function (Content $content) use ($cache): void {
+            $cache->forget("site:{$content->site_uuid}:content:{$content->set->handle}:{$content->slug}");
         });
 
         $this->components->info('Lara Ceemes cache cleared.');

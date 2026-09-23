@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Arr;
 use LaraCeemes\Fields\FieldRegistry;
+use LaraCeemes\Models\Concerns\BelongsToSite;
 
 /**
  * @property string $uuid
  * @property string $section_type_uuid
+ * @property string $site_uuid
  * @property string|null $name
  * @property string|null $handle
  * @property array<string, mixed> $data
@@ -19,10 +21,13 @@ use LaraCeemes\Fields\FieldRegistry;
  */
 final class Section extends CeemesModel
 {
+    use BelongsToSite;
+
     protected $table = 'ceemes_sections';
 
     protected $fillable = [
         'section_type_uuid',
+        'site_uuid',
         'name',
         'handle',
         'data',

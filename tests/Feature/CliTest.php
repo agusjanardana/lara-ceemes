@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace LaraCeemes\Tests\Feature;
 
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use LaraCeemes\Models\Category;
 use LaraCeemes\Models\CategoryGroup;
 use LaraCeemes\Models\Content;
@@ -135,5 +137,29 @@ final class CliTest extends TestCase
         self::assertSame(1, User::query()->count());
         self::assertSame('Site Owner', $user->fresh()->name);
         self::assertTrue(Hash::check('password123', $user->fresh()->password));
+    }
+
+    public function test_agent_skill_command_generates_and_safely_updates_project_skill(): void
+    {
+        $relativePath = '.agents/skills/lara-ceemes-test-'.Str::lower(Str::random(8));
+        $destination = base_path(str_replace('/', DIRECTORY_SEPARATOR, $relativePath));
+        $files = app(Filesystem::class);
+
+        try {
+            $this->artisan('ceemes:make-agent-skill', ['--path' => $relativePath])
+                ->assertSuccessful();
+
+            self::assertFileExists($destination.DIRECTORY_SEPARATOR.'SKILL.md');
+            self::assertFileExists($destination.DIRECTORY_SEPARATOR.'references'.DIRECTORY_SEPARATOR.'concepts.md');
+            self::assertFileExists($destination.DIRECTORY_SEPARATOR.'references'.DIRECTORY_SEPARATOR.'commands-and-api.md');
+            self::assertFileExists($destination.DIRECTORY_SEPARATOR.'references'.DIRECTORY_SEPARATOR.'best-practices.md');
+
+            $this->artisan('ceemes:make-agent-skill', ['--path' => $relativePath])
+                ->assertFailed();
+            $this->artisan('ceemes:make-agent-skill', ['--path' => $relativePath, '--force' => true])
+                ->assertSuccessful();
+        } finally {
+            $files->deleteDirectory($destination);
+        }
     }
 }

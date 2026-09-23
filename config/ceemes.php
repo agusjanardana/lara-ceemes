@@ -26,6 +26,13 @@ return [
         'middleware' => ['web'],
     ],
 
+    'multisite' => [
+        'enabled' => env('CEEMES_MULTISITE_ENABLED', false),
+        'default_handle' => env('CEEMES_DEFAULT_SITE', config('app.locale', 'en')),
+        'default_name' => env('CEEMES_DEFAULT_SITE_NAME', config('app.name', 'Default Site')),
+        'default_locale' => env('CEEMES_DEFAULT_SITE_LOCALE', config('app.locale', 'en')),
+    ],
+
     'views' => [
         'auto_scaffold' => env('CEEMES_AUTO_SCAFFOLD_VIEWS', true),
         'path' => null,

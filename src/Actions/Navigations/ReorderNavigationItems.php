@@ -38,7 +38,7 @@ final class ReorderNavigationItems extends Action
                 $navigation->itemRecords()->where('uuid', $uuid)->update(['sort_order' => $sortOrder]);
             }
 
-            $this->cache->forget("navigation:{$navigation->handle}");
+            $this->cache->forget("site:{$navigation->site_uuid}:navigation:{$navigation->handle}");
         });
     }
 }

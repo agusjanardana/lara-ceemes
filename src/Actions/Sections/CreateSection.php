@@ -32,7 +32,10 @@ final class CreateSection extends Action
 
         $validated = Validator::make($data, [
             'name' => ['nullable', 'string', 'max:255'],
-            'handle' => ['nullable', 'alpha_dash:ascii', 'max:255', Rule::unique('ceemes_sections', 'handle')],
+            'handle' => [
+                'nullable', 'alpha_dash:ascii', 'max:255',
+                Rule::unique('ceemes_sections', 'handle')->where('site_uuid', $content->site_uuid),
+            ],
             'field_handle' => ['sometimes', 'alpha_dash:ascii', 'max:255'],
             'key' => ['nullable', 'alpha_dash:ascii', 'max:255'],
             'data' => ['sometimes', 'array'],
@@ -60,6 +63,7 @@ final class CreateSection extends Action
                 'handle' => $validated['handle'],
                 'data' => $validated['data'],
                 'section_type_uuid' => $sectionType->uuid,
+                'site_uuid' => $content->site_uuid,
             ]);
             $content->placedSections()->attach($section->uuid, [
                 'uuid' => (string) Str::uuid(),

@@ -27,7 +27,7 @@ final class MediaUsageDetector
     {
         $usages = [];
 
-        foreach (Content::query()->with('set')->get() as $content) {
+        foreach (Content::withoutGlobalScope('ceemes_site')->with('set')->get() as $content) {
             foreach ($content->data() as $fieldHandle => $value) {
                 if ($this->contains($value, $mediaUuid)) {
                     $usages[] = new MediaUsage(
@@ -57,7 +57,7 @@ final class MediaUsageDetector
     {
         $usages = [];
 
-        foreach (Section::query()->with(['contents.set', 'sectionType'])->get() as $section) {
+        foreach (Section::withoutGlobalScope('ceemes_site')->with(['contents.set', 'sectionType'])->get() as $section) {
             foreach ($section->data() as $fieldHandle => $value) {
                 if ($this->contains($value, $mediaUuid)) {
                     $usages[] = new MediaUsage(
@@ -97,7 +97,9 @@ final class MediaUsageDetector
     {
         $usages = [];
 
-        foreach (NavigationItem::query()->with('navigation')->get() as $item) {
+        foreach (NavigationItem::query()->with([
+            'navigation' => fn ($query) => $query->withoutGlobalScope('ceemes_site'),
+        ])->get() as $item) {
             if ($this->contains($item->data, $mediaUuid)) {
                 $usages[] = new MediaUsage(
                     'navigation',

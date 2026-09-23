@@ -17,6 +17,7 @@ use LaraCeemes\Models\Set;
 use LaraCeemes\Support\ContentCacheInvalidator;
 use LaraCeemes\Support\ContentDataValidator;
 use LaraCeemes\Support\ContentUri;
+use LaraCeemes\Support\SiteContext;
 
 final class CreateContent extends Action
 {
@@ -24,6 +25,7 @@ final class CreateContent extends Action
         private readonly ContentDataValidator $contentData,
         private readonly ContentCacheInvalidator $cache,
         private readonly ContentUri $contentUri,
+        private readonly SiteContext $sites,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -33,6 +35,8 @@ final class CreateContent extends Action
             $data['slug'] = Str::slug((string) ($data['title'] ?? ''));
         }
         $setUuid = $set->uuid;
+        $siteUuid = $this->sites->current()->uuid;
+        $data['site_uuid'] = $siteUuid;
         $data['uri'] = $this->contentUri->normalize($data['uri'] ?? null, $set, $data['slug']);
         $adminPrefix = preg_quote(trim((string) config('ceemes.admin.prefix', 'admin'), '/'), '#');
 
@@ -44,7 +48,8 @@ final class CreateContent extends Action
                 'max:255',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique('ceemes_contents', 'slug')
-                    ->where('set_uuid', $setUuid),
+                    ->where('set_uuid', $setUuid)
+                    ->where('site_uuid', $siteUuid),
             ],
             'uri' => [
                 'required',
@@ -52,13 +57,14 @@ final class CreateContent extends Action
                 'max:255',
                 'regex:#^/(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$#',
                 "not_regex:#^/{$adminPrefix}(?:/|$)#",
-                Rule::unique('ceemes_contents', 'uri'),
+                Rule::unique('ceemes_contents', 'uri')->where('site_uuid', $siteUuid),
             ],
             'data' => ['sometimes', 'array'],
             'seo' => ['nullable', 'array'],
             'status' => ['sometimes', Rule::enum(ContentStatus::class)],
             'created_by' => ['nullable'],
             'updated_by' => ['nullable'],
+            'site_uuid' => ['required', 'uuid'],
         ])->validate();
 
         $validated['data'] = $this->contentData->validate(

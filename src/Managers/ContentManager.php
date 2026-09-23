@@ -6,13 +6,20 @@ namespace LaraCeemes\Managers;
 
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use LaraCeemes\Models\Content;
+use LaraCeemes\Support\CeemesCache;
+use LaraCeemes\Support\SiteContext;
 
 final class ContentManager extends Manager
 {
+    public function __construct(CeemesCache $cache, private readonly SiteContext $sites)
+    {
+        parent::__construct($cache);
+    }
+
     public function find(string $setHandle, string $slug): ?Content
     {
         return $this->cache->remember(
-            "content:{$setHandle}:{$slug}",
+            $this->sites->cacheKey("content:{$setHandle}:{$slug}"),
             fn (): ?Content => Content::query()
                 ->whereHas('set', fn ($query) => $query->where('handle', $setHandle))
                 ->where('slug', $slug)

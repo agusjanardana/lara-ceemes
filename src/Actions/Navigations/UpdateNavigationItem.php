@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use LaraCeemes\Actions\Action;
+use LaraCeemes\Models\Navigation;
 use LaraCeemes\Models\NavigationItem;
 use LaraCeemes\Support\CeemesCache;
 
@@ -19,8 +20,14 @@ final class UpdateNavigationItem extends Action
     public function execute(NavigationItem $item, array $data): NavigationItem
     {
         $type = is_string($data['type'] ?? null) ? $data['type'] : $item->type;
+        $navigation = Navigation::query()->findOrFail($item->navigation_uuid);
         $targetRules = match ($type) {
-            'content' => ['sometimes', 'required', 'uuid', Rule::exists('ceemes_contents', 'uuid')],
+            'content' => [
+                'sometimes',
+                'required',
+                'uuid',
+                Rule::exists('ceemes_contents', 'uuid')->where('site_uuid', $navigation->site_uuid),
+            ],
             'url' => ['sometimes', 'required', 'url'],
             default => ['sometimes', 'required', 'string', 'max:255'],
         };
@@ -43,9 +50,9 @@ final class UpdateNavigationItem extends Action
             ]);
         }
 
-        return $this->transaction(function () use ($item, $validated): NavigationItem {
+        return $this->transaction(function () use ($item, $navigation, $validated): NavigationItem {
             $item->update($validated);
-            $this->cache->forget("navigation:{$item->navigation->handle}");
+            $this->cache->forget("site:{$navigation->site_uuid}:navigation:{$navigation->handle}");
 
             return $item->refresh();
         });

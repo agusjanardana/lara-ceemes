@@ -21,15 +21,17 @@ final class UpdateNavigation extends Action
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'handle' => [
                 'sometimes', 'required', 'alpha_dash:ascii', 'max:255',
-                Rule::unique('ceemes_navigations', 'handle')->ignore($navigation->uuid, 'uuid'),
+                Rule::unique('ceemes_navigations', 'handle')
+                    ->where('site_uuid', $navigation->site_uuid)
+                    ->ignore($navigation->uuid, 'uuid'),
             ],
         ])->validate();
 
         return $this->transaction(function () use ($navigation, $validated): Navigation {
             $oldHandle = $navigation->handle;
             $navigation->update($validated);
-            $this->cache->forget("navigation:{$oldHandle}");
-            $this->cache->forget("navigation:{$navigation->handle}");
+            $this->cache->forget("site:{$navigation->site_uuid}:navigation:{$oldHandle}");
+            $this->cache->forget("site:{$navigation->site_uuid}:navigation:{$navigation->handle}");
 
             return $navigation->refresh();
         });

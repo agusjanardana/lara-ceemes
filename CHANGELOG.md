@@ -2,6 +2,18 @@
 
 All notable changes to Lara Ceemes are documented in this file.
 
+## [0.4.0] - 2026-09-23
+
+### Added
+
+- Optional multisite support with UUID Sites, locale-aware site context,
+  Admin site management and switching, prefixed public routes, site-scoped
+  Content/Sections/Navigations, isolated relation validation, cache namespaces,
+  public Site facade, and `--site` support on relevant Artisan commands.
+- `ceemes:make-agent-skill` command for generating a versioned, project-local
+  Lara Ceemes coding-agent skill with focused concept, API, and best-practice
+  references.
+
 ## [0.3.0] - 2026-09-23
 
 ### Added

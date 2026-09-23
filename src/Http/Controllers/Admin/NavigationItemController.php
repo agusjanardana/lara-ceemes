@@ -61,17 +61,18 @@ final class NavigationItemController extends AdminController
 
     public function update(Request $request, NavigationItem $navigationItem, UpdateNavigationItem $action): RedirectResponse
     {
+        $navigation = Navigation::query()->findOrFail($navigationItem->navigation_uuid);
         $data = $request->all();
         $data['parent_uuid'] = $request->input('parent_uuid') ?: null;
         $data['data'] = $this->jsonObject($request->input('data'), 'data');
         $action->execute($navigationItem, $data);
 
-        return $this->success('ceemes.admin.navigation-items.index', 'Navigation Item updated.', $navigationItem->navigation);
+        return $this->success('ceemes.admin.navigation-items.index', 'Navigation Item updated.', $navigation);
     }
 
     public function destroy(NavigationItem $navigationItem, DeleteNavigationItem $action): RedirectResponse
     {
-        $navigation = $navigationItem->navigation;
+        $navigation = Navigation::query()->findOrFail($navigationItem->navigation_uuid);
         $action->execute($navigationItem);
 
         return $this->success('ceemes.admin.navigation-items.index', 'Navigation Item deleted.', $navigation);

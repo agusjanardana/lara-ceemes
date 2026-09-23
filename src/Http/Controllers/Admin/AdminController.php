@@ -13,13 +13,20 @@ use LaraCeemes\Models\CategoryGroup;
 use LaraCeemes\Models\SectionField;
 use LaraCeemes\Models\Set;
 use LaraCeemes\Models\SetField;
+use LaraCeemes\Models\Site;
+use LaraCeemes\Support\SiteContext;
 
 abstract class AdminController extends Controller
 {
     /** @param array<string, mixed> $data */
     protected function render(string $view, array $data = []): View
     {
+        $siteContext = app(SiteContext::class);
+
         return app(Factory::class)->make($view, [
+            'multisiteEnabled' => $siteContext->enabled(),
+            'currentSite' => $siteContext->current(),
+            'adminSites' => Site::query()->where('is_enabled', true)->orderBy('sort_order')->orderBy('name')->get(),
             'sidebarSets' => Set::query()
                 ->orderBy('sort_order')
                 ->orderBy('name')

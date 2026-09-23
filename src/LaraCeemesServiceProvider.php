@@ -28,6 +28,7 @@ use LaraCeemes\Fields\Types\TextareaField;
 use LaraCeemes\Fields\Types\TextField;
 use LaraCeemes\Fields\Types\UrlField;
 use LaraCeemes\Http\Controllers\HomeController;
+use LaraCeemes\Http\Controllers\MultisiteHomeController;
 use LaraCeemes\Http\Controllers\PublicContentController;
 use LaraCeemes\Managers\CategoryManager;
 use LaraCeemes\Managers\ContentManager;
@@ -37,7 +38,9 @@ use LaraCeemes\Managers\SectionManager;
 use LaraCeemes\Managers\SeoManager;
 use LaraCeemes\Managers\SetManager;
 use LaraCeemes\Managers\SettingManager;
+use LaraCeemes\Managers\SiteManager;
 use LaraCeemes\Support\CeemesCache;
+use LaraCeemes\Support\SiteContext;
 use LaraCeemes\Support\UserRoleAuthorizer;
 
 final class LaraCeemesServiceProvider extends ServiceProvider
@@ -50,13 +53,15 @@ final class LaraCeemesServiceProvider extends ServiceProvider
         );
 
         $this->app->singleton(CeemesCache::class);
+        $this->app->scoped(SiteContext::class);
         $this->app->singleton(UserRoleAuthorizer::class);
         $this->app->singleton(SetManager::class);
-        $this->app->singleton(ContentManager::class);
+        $this->app->scoped(ContentManager::class);
         $this->app->singleton(MediaManager::class);
         $this->app->singleton(CategoryManager::class);
-        $this->app->singleton(NavigationManager::class);
+        $this->app->scoped(NavigationManager::class);
         $this->app->singleton(SettingManager::class);
+        $this->app->scoped(SiteManager::class);
         $this->app->singleton(SeoManager::class);
         $this->app->singleton(SectionManager::class);
         $this->app->singleton(FieldRegistry::class, function ($app): FieldRegistry {
@@ -84,14 +89,26 @@ final class LaraCeemesServiceProvider extends ServiceProvider
                 $publicMiddleware = is_array($publicMiddleware) ? $publicMiddleware : ['web'];
 
                 if ($publicRouting) {
-                    Route::middleware($publicMiddleware)->group(function (): void {
-                        Route::get('/{ceemesPath}', PublicContentController::class)
-                            ->where('ceemesPath', '.*')
-                            ->name('ceemes.content.show');
-                    });
+                    if ((bool) config('ceemes.multisite.enabled', false)) {
+                        Route::middleware($publicMiddleware)->group(function () use ($homepage): void {
+                            if ($homepage) {
+                                Route::get('/', MultisiteHomeController::class)->name('ceemes.home');
+                            }
+                            Route::get('/{ceemesSite}/{ceemesPath?}', PublicContentController::class)
+                                ->where('ceemesSite', '[a-z0-9]+(?:-[a-z0-9]+)*')
+                                ->where('ceemesPath', '.*')
+                                ->name('ceemes.content.show');
+                        });
+                    } else {
+                        Route::middleware($publicMiddleware)->group(function (): void {
+                            Route::get('/{ceemesPath}', PublicContentController::class)
+                                ->where('ceemesPath', '.*')
+                                ->name('ceemes.content.show');
+                        });
 
-                    if ($homepage) {
-                        Route::middleware($publicMiddleware)->get('/', PublicContentController::class)->name('ceemes.home');
+                        if ($homepage) {
+                            Route::middleware($publicMiddleware)->get('/', PublicContentController::class)->name('ceemes.home');
+                        }
                     }
                 } elseif ($homepage) {
                     Route::middleware($publicMiddleware)->get('/', HomeController::class)->name('ceemes.home');
@@ -130,6 +147,7 @@ final class LaraCeemesServiceProvider extends ServiceProvider
                 Console\Commands\GetSettingCommand::class,
                 Console\Commands\SetSettingCommand::class,
                 Console\Commands\MakeSuperAdminCommand::class,
+                Console\Commands\MakeAgentSkillCommand::class,
             ]);
         }
     }

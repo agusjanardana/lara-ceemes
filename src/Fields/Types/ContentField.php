@@ -7,6 +7,7 @@ namespace LaraCeemes\Fields\Types;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use LaraCeemes\Models\Set;
+use LaraCeemes\Support\SiteContext;
 
 final class ContentField extends AbstractRelationField
 {
@@ -20,7 +21,8 @@ final class ContentField extends AbstractRelationField
         $setUuid = is_string($config['set'] ?? null)
             ? Set::query()->where('handle', $config['set'])->value('uuid')
             : null;
-        $exists = Rule::exists('ceemes_contents', 'uuid');
+        $exists = Rule::exists('ceemes_contents', 'uuid')
+            ->where('site_uuid', app(SiteContext::class)->current()->uuid);
 
         if (is_string($setUuid)) {
             $exists->where('set_uuid', $setUuid);

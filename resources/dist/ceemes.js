@@ -4,6 +4,7 @@
 
     $('[data-sidebar-toggle]')?.addEventListener('click', () => document.body.classList.toggle('ceemes-sidebar-open'));
     $('[data-sidebar-close]')?.addEventListener('click', () => document.body.classList.remove('ceemes-sidebar-open'));
+    $('[data-site-switch] select')?.addEventListener('change', (event) => event.target.form?.submit());
     $$('[data-nav-group]').forEach((group) => {
         const key = `ceemes-nav-${group.dataset.navGroup}`;
         const button = $('[data-nav-collapse]', group);

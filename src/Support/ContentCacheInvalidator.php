@@ -24,10 +24,11 @@ final class ContentCacheInvalidator
             return;
         }
 
-        $this->cache->forget("content:{$setHandle}:{$content->slug}");
+        $siteKey = 'site:'.$content->site_uuid.':';
+        $this->cache->forget("{$siteKey}content:{$setHandle}:{$content->slug}");
 
         if ($previousSlug !== null && $previousSlug !== $content->slug) {
-            $this->cache->forget("content:{$setHandle}:{$previousSlug}");
+            $this->cache->forget("{$siteKey}content:{$setHandle}:{$previousSlug}");
         }
 
         $this->set($setHandle);

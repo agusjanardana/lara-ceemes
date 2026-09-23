@@ -22,7 +22,7 @@ final class CreateNavigationItem extends Action
 
         return $this->transaction(function () use ($navigation, $validated): NavigationItem {
             $item = $navigation->itemRecords()->create($validated);
-            $this->cache->forget("navigation:{$navigation->handle}");
+            $this->cache->forget("site:{$navigation->site_uuid}:navigation:{$navigation->handle}");
 
             return $item;
         });
@@ -36,7 +36,11 @@ final class CreateNavigationItem extends Action
     {
         $type = is_string($data['type'] ?? null) ? $data['type'] : '';
         $targetRules = match ($type) {
-            'content' => ['required', 'uuid', Rule::exists('ceemes_contents', 'uuid')],
+            'content' => [
+                'required',
+                'uuid',
+                Rule::exists('ceemes_contents', 'uuid')->where('site_uuid', $navigation->site_uuid),
+            ],
             'url' => ['required', 'url'],
             default => ['required', 'string', 'max:255'],
         };

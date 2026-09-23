@@ -42,6 +42,7 @@ final class UpdateContent extends Action
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
                 Rule::unique('ceemes_contents', 'slug')
                     ->where('set_uuid', $content->set_uuid)
+                    ->where('site_uuid', $content->site_uuid)
                     ->ignore($content->uuid, 'uuid'),
             ],
             'uri' => [
@@ -51,7 +52,9 @@ final class UpdateContent extends Action
                 'max:255',
                 'regex:#^/(?:[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*)?$#',
                 "not_regex:#^/{$adminPrefix}(?:/|$)#",
-                Rule::unique('ceemes_contents', 'uri')->ignore($content->uuid, 'uuid'),
+                Rule::unique('ceemes_contents', 'uri')
+                    ->where('site_uuid', $content->site_uuid)
+                    ->ignore($content->uuid, 'uuid'),
             ],
             'data' => ['sometimes', 'array'],
             'seo' => ['nullable', 'array'],

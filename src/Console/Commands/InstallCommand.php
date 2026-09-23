@@ -84,6 +84,7 @@ final class InstallCommand extends Command
         $this->newLine();
         $adminPath = '/'.trim((string) config('ceemes.admin.prefix', 'admin'), '/');
         $this->components->success("Lara Ceemes is ready. Create an admin with [php artisan ceemes:make-superadmin], then open {$adminPath}.");
+        $this->components->info('Optional: run [php artisan ceemes:make-agent-skill] and commit the generated project skill for coding agents.');
 
         return self::SUCCESS;
     }

@@ -11,10 +11,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Arr;
 use LaraCeemes\Enums\ContentStatus;
 use LaraCeemes\Fields\FieldRegistry;
+use LaraCeemes\Models\Concerns\BelongsToSite;
 
 /**
  * @property string $uuid
  * @property string $set_uuid
+ * @property string $site_uuid
  * @property string $title
  * @property string $slug
  * @property string|null $uri
@@ -27,12 +29,14 @@ use LaraCeemes\Fields\FieldRegistry;
  */
 class Content extends CeemesModel
 {
+    use BelongsToSite;
     use SoftDeletes;
 
     protected $table = 'ceemes_contents';
 
     protected $fillable = [
         'set_uuid',
+        'site_uuid',
         'title',
         'slug',
         'uri',
@@ -178,6 +182,21 @@ class Content extends CeemesModel
 
     public function publicUrl(): ?string
     {
-        return is_string($this->uri) && $this->uri !== '' ? url($this->uri) : null;
+        if (! is_string($this->uri) || $this->uri === '') {
+            return null;
+        }
+
+        $prefix = '';
+        if ((bool) config('ceemes.multisite.enabled', false)) {
+            $site = $this->site;
+            if ($site === null) {
+                return null;
+            }
+            $prefix = $site->pathPrefix();
+        }
+
+        $path = $prefix.($this->uri === '/' ? '' : $this->uri);
+
+        return url($path === '' ? '/' : $path);
     }
 }

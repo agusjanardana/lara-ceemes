@@ -24,7 +24,12 @@ final class UpdateSection extends Action
     {
         $validated = Validator::make($data, [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'handle' => ['sometimes', 'required', 'alpha_dash:ascii', 'max:255', Rule::unique('ceemes_sections', 'handle')->ignore($section->uuid, 'uuid')],
+            'handle' => [
+                'sometimes', 'required', 'alpha_dash:ascii', 'max:255',
+                Rule::unique('ceemes_sections', 'handle')
+                    ->where('site_uuid', $section->site_uuid)
+                    ->ignore($section->uuid, 'uuid'),
+            ],
             'data' => ['sometimes', 'array'],
         ])->validate();
 

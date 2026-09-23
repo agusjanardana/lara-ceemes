@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,6 +13,7 @@
     <header class="ceemes-topbar">
         <button class="ceemes-icon-button ceemes-menu-toggle" type="button" data-sidebar-toggle aria-label="Buka menu">☰</button>
         <a class="ceemes-logo" href="{{ route('ceemes.admin.dashboard') }}"><span>LC</span><strong>Lara Ceemes</strong></a>
+        @if($multisiteEnabled ?? false)<form class="ceemes-site-switcher" method="POST" action="{{ route('ceemes.admin.sites.switch') }}" data-site-switch>@csrf<label><small>Site</small><select name="site_uuid" aria-label="Site aktif">@foreach($adminSites as $adminSite)<option value="{{ $adminSite->uuid }}" @selected($currentSite->is($adminSite))>{{ $adminSite->name }} /{{ $adminSite->handle }}</option>@endforeach</select></label></form>@endif
         <div class="ceemes-topbar-spacer"></div>
         <label class="ceemes-global-search"><span>⌕</span><input type="search" placeholder="Cari di halaman ini…" data-global-search><kbd>⌘ K</kbd></label>
         @if(Route::has('ceemes.home'))<a class="ceemes-icon-button" href="{{ route('ceemes.home') }}" target="_blank" title="Lihat website">↗</a>@endif
@@ -37,6 +38,7 @@
             <div class="ceemes-nav-label">Fields</div>
             <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.section-types.*', 'ceemes.admin.section-fields.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.section-types.index') }}"><span class="ceemes-nav-icon">⊞</span>Section Types</a>
             <div class="ceemes-nav-label">System</div>
+            @if($multisiteEnabled ?? false)<a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.sites.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.sites.index') }}"><span class="ceemes-nav-icon">◎</span>Sites</a>@endif
             <a class="ceemes-nav-item {{ request()->routeIs('ceemes.admin.settings.*') ? 'is-active' : '' }}" href="{{ route('ceemes.admin.settings.index') }}"><span class="ceemes-nav-icon">⚙</span>Settings</a>
         </div>
         @if(Route::has('ceemes.logout'))
